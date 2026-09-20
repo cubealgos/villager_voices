@@ -39,6 +39,7 @@ Pure cooldown, rate-limit, silence, and last-played-line bookkeeping for one Vil
 Dispatches VillagerReactionSignals from every discovered VillagerEventSource to its subscribers (VV-1's original behaviour, unchanged and always run first), and — once configured with a LineCatalogue, a LineSink, a clock, and a random source — also runs each published signal through ReactionRules and LineSelector and hands the selected line to the sink (docs/spec/domains/reaction.md §3, REACTION-REQ-005–010, VV-2).
 - `VillagerEventBus()` — No reaction pipeline configured: #publish only fans signals out to subscribers.
 - `VillagerEventBus(LineCatalogue catalogue, LineSink sink, LongSupplier clock, IntUnaryOperator roll)` — new Random()::nextInt
+- `VillagerEventBus(LineCatalogue catalogue, LineSink sink, LongSupplier clock, IntUnaryOperator roll, ReactionRules rules)` — As the four-argument constructor, but with rules supplied directly instead of the spec's proposed defaults — VV-8's config-file-overridable cooldowns (docs/spec/contracts/data-contract.md DATA-REQ-002) construct a ReactionRules from the loaded config and pass it here.
 - `List<VillagerEventSource> discoverSources()` — Discovers every VillagerEventSource on the classpath via ServiceLoader.
 - `void subscribe(Consumer<VillagerReactionSignal> subscriber)`
 - `void publish(VillagerReactionSignal signal)`

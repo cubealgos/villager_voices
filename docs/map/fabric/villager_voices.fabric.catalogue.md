@@ -13,3 +13,7 @@ Loads data/villager_voices/reaction/.json through Minecraft's own resource/datap
 - `void apply(Catalogue catalogue, ResourceManager manager, ProfilerFiller profiler)`
 - `String getName()`
 
+### `class FabricLineCatalogue` — `fabric/src/main/java/villager_voices/fabric/catalogue/FabricLineCatalogue.java`
+Adapts VV-3's Catalogue (keyed by event id string, e.g.
+- `List<LineRef> linesFor(VillagerReactionEvent event)`
+

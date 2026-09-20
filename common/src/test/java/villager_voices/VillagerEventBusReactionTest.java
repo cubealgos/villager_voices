@@ -147,6 +147,27 @@ class VillagerEventBusReactionTest {
     }
 
     @Test
+    void theFiveArgumentConstructorUsesTheInjectedReactionRulesInsteadOfTheSpecDefaults() {
+        // A custom per-event cooldown far shorter than the spec's proposed 1200-tick default: if
+        // this constructor actually wires the injected ReactionRules through (VV-8), a second
+        // publish just one tick later still produces a line, instead of being suppressed.
+        FakeCatalogue catalogue = new FakeCatalogue(Map.of(
+                VillagerReactionEvent.TRADE_COMPLETED, List.of(LINE_1, LINE_2)));
+        RecordingSink sink = new RecordingSink();
+        AtomicLong clock = new AtomicLong(0);
+        ReactionRules briefCooldown = new ReactionRules(1, 0, 0);
+        VillagerEventBus bus = new VillagerEventBus(catalogue, sink, clock::get, bound -> 0, briefCooldown);
+
+        VillagerReactionSignal signal = new VillagerReactionSignal(
+                VILLAGER, VillagerReactionEvent.TRADE_COMPLETED, false, false, Set.of());
+        bus.publish(signal);
+        clock.set(1);
+        bus.publish(signal);
+
+        assertEquals(2, sink.shown.size());
+    }
+
+    @Test
     void unconfiguredBusStillFansOutToSubscribersOnly() {
         VillagerEventBus bus = new VillagerEventBus();
         List<VillagerReactionSignal> received = new ArrayList<>();

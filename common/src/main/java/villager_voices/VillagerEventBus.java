@@ -24,6 +24,12 @@ import java.util.function.LongSupplier;
  * interfaces this ticket needs and nothing more — see their own Javadoc. VV-3 (the line catalogue
  * codec) implements {@code LineCatalogue} and VV-7 (the {@code DisplayQueue} and its fabric shim)
  * implements {@code LineSink}, both after this ticket merges.
+ *
+ * <p>VV-8 adds the five-argument constructor below so a config-sourced {@link ReactionRules} (its
+ * own already-public three-argument constructor, docs/spec/contracts/data-contract.md
+ * {@code DATA-REQ-002}) can replace the four-argument constructor's hardcoded
+ * {@code new ReactionRules()} — plumbing only, {@link ReactionRules}'s own permit/record/cooldown
+ * logic is untouched.
  */
 public final class VillagerEventBus {
 
@@ -47,11 +53,25 @@ public final class VillagerEventBus {
      *                  {@code new Random()::nextInt}
      */
     public VillagerEventBus(LineCatalogue catalogue, LineSink sink, LongSupplier clock, IntUnaryOperator roll) {
+        this(catalogue, sink, clock, roll, new ReactionRules());
+    }
+
+    /**
+     * As the four-argument constructor, but with {@code rules} supplied directly instead of the
+     * spec's proposed defaults — VV-8's config-file-overridable cooldowns
+     * (docs/spec/contracts/data-contract.md {@code DATA-REQ-002}) construct a {@link ReactionRules}
+     * from the loaded config and pass it here.
+     *
+     * @param rules the cooldown/rate-limit/silence rules this bus's reaction pipeline runs every
+     *     published signal through
+     */
+    public VillagerEventBus(LineCatalogue catalogue, LineSink sink, LongSupplier clock, IntUnaryOperator roll,
+            ReactionRules rules) {
         this.catalogue = catalogue;
         this.sink = sink;
         this.clock = clock;
         this.roll = roll;
-        this.rules = new ReactionRules();
+        this.rules = rules;
     }
 
     /** Discovers every {@link VillagerEventSource} on the classpath via {@link ServiceLoader}. */

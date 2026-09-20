@@ -41,6 +41,7 @@ Exercises VillagerEventBus's reaction pipeline (VV-2) end to end with a fake Lin
 - `void sleepingVillagerProducesNoLineForANonSleepEvent()`
 - `void rateLimitedPlayerIsExcludedFromRecipientsButOthersStillReceiveTheLine()`
 - `void noRepeatAcrossTwoWellSeparatedPublishes()`
+- `void theFiveArgumentConstructorUsesTheInjectedReactionRulesInsteadOfTheSpecDefaults()`
 - `void unconfiguredBusStillFansOutToSubscribersOnly()`
 
 ### `class VillagerEventBusTest` — `common/src/test/java/villager_voices/VillagerEventBusTest.java`
