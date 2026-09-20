@@ -31,15 +31,15 @@ following `villager_voices:reaction.<event>.<n>` exactly (`LINES-REQ-003`).
 
 ## Acceptance criteria
 
-- [ ] All 16 `data/villager_voices/reaction/<event>.json` files exist with exactly the 4 lines each
+- [x] All 16 `data/villager_voices/reaction/<event>.json` files exist with exactly the 4 lines each
       from `reaction-lines.md` §3, 64 lines total (`LINES-REQ-001`).
-- [ ] A datapack replacing one catalogue file is used in place of the shipped default, decoded the
+- [x] A datapack replacing one catalogue file is used in place of the shipped default, decoded the
       same way (`REACTION-REQ-011`).
-- [ ] A catalogue entry naming an unregistered sound id is rejected at load with a clear error
+- [x] A catalogue entry naming an unregistered sound id is rejected at load with a clear error
       naming the id, never silently dropped or a crash (`REACTION-REQ-012`, `REACTION-FAIL-003`).
-- [ ] Every line's subtitle text matches its lang key's text and its `sound` id 1:1
+- [x] Every line's subtitle text matches its lang key's text and its `sound` id 1:1
       (`reaction-lines.md` §2, `LINES-REQ-003`).
-- [ ] `common:verifyLoaderFree` still passes.
+- [x] `common:verifyLoaderFree` still passes.
 
 ## Constraints and prior findings
 
