@@ -4,6 +4,14 @@ loader = "0.19.5"
 fabricApi = "0.161.0+26.2"
 loom = "1.17.21"
 junit = "6.1.3"
+# VV-12, docs/spec/domains/compat.md COMPAT-REQ-004: EMF's own compile-time API jar, compileOnly
+# only, never a runtime/hard dependency (COMPAT-FAIL-001). Pulled from Modrinth's own maven, pinned
+# to the exact 26.2 Fabric builds confirmed against by this ticket's own Findings -- no other maven
+# publishes either jar. ETF is EMF's own hard dependency (its fabric.mod.json "depends"), and its
+# API type is exposed from EMF's own public surface (EMFState#state()'s return type extends an ETF
+# interface) -- needed as a second modCompileOnly for that reason alone, never called into directly.
+emf = "3.3.8-fabric-26.2"
+etf = "7.2.4-fabric-26.2"
 
 [libraries]
 minecraft = { module = "com.mojang:minecraft", version.ref = "minecraft" }
@@ -12,6 +20,8 @@ fabricApi = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabr
 junitBom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junitLauncher = { module = "org.junit.platform:junit-platform-launcher" }
+emf = { module = "maven.modrinth:entity-model-features", version.ref = "emf" }
+etf = { module = "maven.modrinth:entitytexturefeatures", version.ref = "etf" }
 
 [plugins]
 loom = { id = "net.fabricmc.fabric-loom", version.ref = "loom" }

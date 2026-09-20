@@ -7,7 +7,7 @@ signature is the contract; read the source only when the summary is not enough.
 
 The one config file this mod writes (docs/spec/contracts/data-contract.md DATA-REQ-002): a pure Java model (villager_voices.config.Config) and its parser/serialiser (villager_voices.config.ConfigCodec), built on villager_voices.catalogue.MiniJson rather than a new dependency.
 
-### `record Config(String schemaVersion, long perVillagerPerEventCooldownTicks, long perVillagerGlobalCooldownTicks, long serverRatePerPlayerTicks, boolean displayActionBar, boolean displaySubtitleHint, long displayQueueMinHoldTicks, double displayMasterVolume, double hearingRangeBlocks, CategoryMutes categoryMutes)` — `common/src/main/java/villager_voices/config/Config.java`
+### `record Config(String schemaVersion, long perVillagerPerEventCooldownTicks, long perVillagerGlobalCooldownTicks, long serverRatePerPlayerTicks, boolean displayActionBar, boolean displaySubtitleHint, long displayQueueMinHoldTicks, double displayMasterVolume, double hearingRangeBlocks, CategoryMutes categoryMutes, long talkingDurationTicks)` — `common/src/main/java/villager_voices/config/Config.java`
 The one server-operator-facing config file this mod writes (docs/spec/contracts/data-contract.md DATA-REQ-002): the three cooldown/rate-limit windows VV-2's ReactionRules otherwise hardcodes, VV-7's DisplayQueue minimum hold time, the alpha's hearing-range override, the per-category mute toggles, and the two display on/off toggles named in docs/spec/domains/display.md §3's "Config surface" table.
 - `String SCHEMA_VERSION` — The config file's own schema version at 1.0 (docs/spec/contracts/data-contract.md).
 - `long DEFAULT_PER_VILLAGER_PER_EVENT_COOLDOWN_TICKS` — Mirrors ReactionRules#DEFAULT_PER_EVENT_COOLDOWN_TICKS -- one source of truth.
@@ -18,6 +18,7 @@ The one server-operator-facing config file this mod writes (docs/spec/contracts/
 - `boolean DEFAULT_DISPLAY_SUBTITLE_HINT`
 - `double DEFAULT_DISPLAY_MASTER_VOLUME`
 - `double DEFAULT_HEARING_RANGE_BLOCKS` — Matches ActionBarDisplay.PLACEHOLDER_HEARING_RADIUS_BLOCKS (VV-7).
+- `long DEFAULT_TALKING_DURATION_TICKS` — 40 ticks (2s) — VV-12's own confirmed default (this ticket's Findings), longer than VV-8's 0.2s placeholder sound so the flag is comfortably visible for manual EMF testing until real per-line durations replace this flat default.
 - `Config defaults()` — The shipped defaults -- VV-2's and VV-7's current hardcoded constants, unchanged.
 
     - **nested** `record CategoryMutes(boolean trade, boolean combat, boolean social, boolean raid)`

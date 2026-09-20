@@ -17,4 +17,6 @@ docs/spec/operations/testing.md: "the config-file default/clamp behaviour" -- Co
 - `void aNegativeCooldownInTheFileIsClampedToItsDefaultByConfigItself()`
 - `void categoryMutesRoundTripPerCategory()`
 - `void blankSchemaVersionResetsToTheCurrentOne()`
+- `void talkingDurationTicksRoundTripsAndClampsLikeEveryOtherTickField()`
+- `void aNegativeTalkingDurationInTheFileIsClampedToItsDefaultByConfigItself()`
 

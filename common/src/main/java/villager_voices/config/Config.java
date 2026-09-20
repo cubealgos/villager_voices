@@ -42,6 +42,12 @@ import villager_voices.display.DisplayQueue;
  *     round-tripped by this ticket but not yet wired into {@link villager_voices.VillagerEventBus}
  *     filtering (recorded in this ticket's Findings — no constructor seam exists for it yet
  *     without changing {@link ReactionRules}' or the event bus's own selection logic)
+ * @param talkingDurationTicks {@code compat.talkingDurationTicks} (VV-12,
+ *     docs/spec/domains/compat.md {@code COMPAT-REQ-002}): how long the talking-state flag stays
+ *     true after a line's sound starts. A flat, configurable default standing in for the real
+ *     per-line sound duration — VV-8's own placeholder sound is 0.2s; reading each line's actual
+ *     duration (from its ogg, or a generated per-line table) is future work, recorded in this
+ *     ticket's own Findings, not built here.
  */
 public record Config(
         String schemaVersion,
@@ -53,7 +59,8 @@ public record Config(
         long displayQueueMinHoldTicks,
         double displayMasterVolume,
         double hearingRangeBlocks,
-        CategoryMutes categoryMutes) {
+        CategoryMutes categoryMutes,
+        long talkingDurationTicks) {
 
     /** The config file's own schema version at 1.0 (docs/spec/contracts/data-contract.md). */
     public static final String SCHEMA_VERSION = "1.0";
@@ -71,6 +78,12 @@ public record Config(
     public static final double DEFAULT_DISPLAY_MASTER_VOLUME = 1.0;
     /** Matches {@code ActionBarDisplay.PLACEHOLDER_HEARING_RADIUS_BLOCKS} (VV-7). */
     public static final double DEFAULT_HEARING_RANGE_BLOCKS = 16.0;
+    /**
+     * 40 ticks (2s) — VV-12's own confirmed default (this ticket's Findings), longer than VV-8's
+     * 0.2s placeholder sound so the flag is comfortably visible for manual EMF testing until real
+     * per-line durations replace this flat default.
+     */
+    public static final long DEFAULT_TALKING_DURATION_TICKS = 40;
 
     public Config {
         if (schemaVersion == null || schemaVersion.isBlank()) {
@@ -97,6 +110,9 @@ public record Config(
         if (categoryMutes == null) {
             categoryMutes = CategoryMutes.NONE_MUTED;
         }
+        if (talkingDurationTicks < 0) {
+            talkingDurationTicks = DEFAULT_TALKING_DURATION_TICKS;
+        }
     }
 
     /** The shipped defaults -- VV-2's and VV-7's current hardcoded constants, unchanged. */
@@ -111,7 +127,8 @@ public record Config(
                 DEFAULT_DISPLAY_QUEUE_MIN_HOLD_TICKS,
                 DEFAULT_DISPLAY_MASTER_VOLUME,
                 DEFAULT_HEARING_RANGE_BLOCKS,
-                CategoryMutes.NONE_MUTED);
+                CategoryMutes.NONE_MUTED,
+                DEFAULT_TALKING_DURATION_TICKS);
     }
 
     /**

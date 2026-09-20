@@ -11,6 +11,14 @@ version = "0.1.0+26.2"
 
 repositories {
     maven("https://maven.fabricmc.net/")
+    // VV-12: EMF's (and its own hard dependency ETF's) compile-only API jars, modCompileOnly below
+    // -- neither publishes to Maven Central or its own dedicated maven, only Modrinth's own maven
+    // proxy (this ticket's own Findings). exclusiveContent keeps this repository from being
+    // consulted for anything outside its own group, Modrinth's documented recommendation.
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
+        filter { includeGroup("maven.modrinth") }
+    }
 }
 
 dependencies {
@@ -18,6 +26,13 @@ dependencies {
     implementation(libs.fabricLoader)
     implementation(libs.fabricApi)
     implementation(project(":common"))
+    // Compile-only, soft dependency (docs/spec/domains/compat.md COMPAT-REQ-004): never on the
+    // runtime classpath or in the shipped jar, referenced only behind
+    // FabricLoader.isModLoaded("entity_model_features") (villager_voices.fabric.compat.EmfCompat).
+    // Plain compileOnly, matching this file's own existing fabricApi/fabricLoader convention above
+    // (this project's Loom/mappings setup needs no "mod"-prefixed remapping configuration).
+    compileOnly(libs.emf)
+    compileOnly(libs.etf)
     testImplementation(platform(libs.junitBom))
     testImplementation(libs.junitJupiter)
     testRuntimeOnly(libs.junitLauncher)

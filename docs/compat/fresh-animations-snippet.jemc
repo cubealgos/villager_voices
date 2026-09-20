@@ -1,0 +1,20 @@
+// villager_voices -- reference EMF animation snippet (VV-12, docs/spec/domains/compat.md
+// COMPAT-REQ-005). Not a loaded game asset of this mod's own: shipped here, under docs/, not under
+// assets/, so it registers nothing and affects no in-game model on its own.
+//
+// A minimal jaw-bone rotation keyed to villager_voices.is_talking (COMPAT-REQ-004), illustrative
+// only -- copy the "condition" and "bones" shape into a real EMF/CEM animation JSON authored against
+// whichever mouth-bone name a compatible model actually uses. Fresh Animations itself has no
+// confirmed dedicated jaw/mouth bone for the villager model as of this ticket (research
+// villager-events-sounds-and-emf-compat.md §D2, labelled inferred not confirmed) -- this snippet
+// exists so a pack author, including a future Fresh-Animations-style pack that adds one, has a
+// working example to copy, not because Fresh Animations supports it today.
+{
+  "description": "villager_voices reference snippet -- copy into a compatible model's own animation file",
+  "condition": "query.variable('villager_voices.is_talking')",
+  "bones": {
+    "head_mouth": {
+      "rotation": ["math.sin(query.anim_time * 4000) * 6", 0, 0]
+    }
+  }
+}

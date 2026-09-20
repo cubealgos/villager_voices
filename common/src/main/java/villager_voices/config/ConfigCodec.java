@@ -33,6 +33,7 @@ public final class ConfigCodec {
         Map<String, Object> cooldowns = objectField(root, "cooldowns");
         Map<String, Object> display = objectField(root, "display");
         Map<String, Object> categories = objectField(root, "categories");
+        Map<String, Object> compat = objectField(root, "compat");
 
         return new Config(
                 stringField(root, "schemaVersion", Config.SCHEMA_VERSION),
@@ -48,7 +49,8 @@ public final class ConfigCodec {
                         mutedField(categories, "trade"),
                         mutedField(categories, "combat"),
                         mutedField(categories, "social"),
-                        mutedField(categories, "raid")));
+                        mutedField(categories, "raid")),
+                longField(compat, "talkingDurationTicks", Config.DEFAULT_TALKING_DURATION_TICKS));
     }
 
     /** The canonical on-disk shape: nested {@code cooldowns}/{@code display}/{@code categories} objects. */
@@ -73,6 +75,9 @@ public final class ConfigCodec {
         out.append("    \"combat\": { \"muted\": ").append(config.categoryMutes().combat()).append(" },\n");
         out.append("    \"social\": { \"muted\": ").append(config.categoryMutes().social()).append(" },\n");
         out.append("    \"raid\": { \"muted\": ").append(config.categoryMutes().raid()).append(" }\n");
+        out.append("  },\n");
+        out.append("  \"compat\": {\n");
+        out.append("    \"talkingDurationTicks\": ").append(config.talkingDurationTicks()).append("\n");
         out.append("  }\n");
         out.append("}\n");
         return out.toString();

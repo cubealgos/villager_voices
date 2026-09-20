@@ -2,6 +2,7 @@ package villager_voices.fabric;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
@@ -15,6 +16,8 @@ import villager_voices.config.Config;
 import villager_voices.display.DisplayQueue;
 import villager_voices.fabric.catalogue.CatalogueReloadListener;
 import villager_voices.fabric.catalogue.FabricLineCatalogue;
+import villager_voices.fabric.compat.TalkingPayload;
+import villager_voices.fabric.compat.TalkingStateSync;
 import villager_voices.fabric.config.ConfigLoader;
 import villager_voices.fabric.debug.DebugCommand;
 import villager_voices.fabric.display.ActionBarDisplay;
@@ -23,9 +26,11 @@ import villager_voices.fabric.sound.SoundRegistration;
 
 /**
  * The mod's server-and-common entrypoint. Registers the 64 reaction {@code SoundEvent}s
- * ({@link SoundRegistration}, VV-8) and the line catalogue's {@link CatalogueReloadListener}
- * (VV-3, docs/spec/domains/reaction-lines.md) at mod init — both must exist before any world or
- * datapack loads. Everything that needs a live server (the loaded config, the actual
+ * ({@link SoundRegistration}, VV-8), the line catalogue's {@link CatalogueReloadListener}
+ * (VV-3, docs/spec/domains/reaction-lines.md), and {@link TalkingPayload}'s own
+ * {@code CustomPacketPayload} type (VV-12, docs/spec/domains/compat.md {@code COMPAT-REQ-002}) at
+ * mod init — all three must exist before any world or datapack loads, or (for the payload) before
+ * any player connects. Everything that needs a live server (the loaded config, the actual
  * {@link VillagerEventBus}, the {@link DisplayQueue} sized from it, and every
  * {@link VillagerEventSource}'s registration against that bus) is built once
  * {@link ServerLifecycleEvents#SERVER_STARTED} fires, in {@link #onServerStarted}
@@ -75,6 +80,8 @@ public final class VillagerVoicesFabric implements ModInitializer {
     public void onInitialize() {
         SoundRegistration.registerAll();
 
+        PayloadTypeRegistry.clientboundPlay().register(TalkingPayload.TYPE, TalkingPayload.STREAM_CODEC);
+
         ResourceLoader.get(PackType.SERVER_DATA)
             .registerReloadListener(CatalogueReloadListener.id(), new CatalogueReloadListener());
 
@@ -105,7 +112,7 @@ public final class VillagerVoicesFabric implements ModInitializer {
             config.perVillagerPerEventCooldownTicks(),
             config.perVillagerGlobalCooldownTicks(),
             config.serverRatePerPlayerTicks());
-        FabricLineSink sink = new FabricLineSink(server, config, queue);
+        FabricLineSink sink = new FabricLineSink(server, config, queue, new TalkingStateSync());
         VillagerEventBus bus = new VillagerEventBus(new FabricLineCatalogue(), sink,
             server::getTickCount, server.overworld().getRandom()::nextInt, rules);
         eventBus = bus;
