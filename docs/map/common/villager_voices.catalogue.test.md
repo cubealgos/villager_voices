@@ -16,6 +16,10 @@ signature is the contract; read the source only when the summary is not enough.
 - `void rejectsASoundIdNamingADifferentEvent()`
 - `void rejectsASoundIdUnknownToTheInjectedRegistryCheck_namingTheId()`
 - `void soundExistsIsConsultedPerId()`
+- `void parsesALineWithAGrunt()`
+- `void parsesALineWithoutAGruntAsNull()`
+- `void rejectsABlankGrunt()`
+- `void rejectsAMalformedGruntId()`
 
 ### `class CatalogueTest` — `common/src/test/java/villager_voices/catalogue/CatalogueTest.java`
 - `void linesForAnUnloadedEventIsEmpty()`

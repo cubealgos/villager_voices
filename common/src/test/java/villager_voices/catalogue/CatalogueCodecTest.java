@@ -96,4 +96,42 @@ class CatalogueCodecTest {
             "hurt", json, "villager_voices:reaction.hurt.1"::equals));
         assertTrue(ex.getMessage().contains("villager_voices:reaction.hurt.2"), ex.getMessage());
     }
+
+    // VV-18: the optional "grunt" field (AUDIO-REQ-007, AUDIO-DEC-005).
+
+    @Test
+    void parsesALineWithAGrunt() {
+        List<Line> lines = CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", "
+                + "\"grunt\": \"minecraft:entity.villager.hurt\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("minecraft:entity.villager.hurt", lines.get(0).grunt());
+    }
+
+    @Test
+    void parsesALineWithoutAGruntAsNull() {
+        List<Line> lines = CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals(null, lines.get(0).grunt());
+    }
+
+    @Test
+    void rejectsABlankGrunt() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", \"grunt\": \"  \"}]}",
+            id -> true));
+        assertTrue(ex.getMessage().contains("grunt"), ex.getMessage());
+    }
+
+    @Test
+    void rejectsAMalformedGruntId() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", "
+                + "\"grunt\": \"not a namespaced id\"}]}",
+            id -> true));
+        assertTrue(ex.getMessage().contains("not a namespaced id") || ex.getMessage().contains("grunt id"), ex.getMessage());
+    }
 }

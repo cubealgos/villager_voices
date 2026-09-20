@@ -5,6 +5,11 @@
 Every type with its summary and every non-private constructor, method and constant. The
 signature is the contract; read the source only when the summary is not enough.
 
+### `class GruntSequencingGameTest` — `fabric/src/gametest/java/villager_voices/fabric/sound/GruntSequencingGameTest.java`
+VV-18 (AUDIO-REQ-007, AUDIO-DEC-005): ReactionSoundPlayer#play's own sequencing, tested through TickScheduler itself as the recording seam -- a line with a grunt schedules its own sound for a later tick rather than playing it on the spot; a line without a grunt plays immediately, with nothing scheduled.
+- `void aLineWithAGruntSchedulesItsOwnSoundForALaterTickInsteadOfPlayingItImmediately(GameTestHelper helper)`
+- `void aLineWithoutAGruntPlaysOnTheSameTickWithNothingScheduled(GameTestHelper helper)`
+
 ### `class ReactionSoundGameTest` — `fabric/src/gametest/java/villager_voices/fabric/sound/ReactionSoundGameTest.java`
 VV-8: a forced signal, published through VV-2's own VillagerEventBus API (no mixin or native event hook exists yet — VV-4/5/6's own territory), reaches the fabric LineSink adapter wired in VillagerVoicesFabric#onServerStarted: it enqueues an action-bar line for a player within hearing range (DISPLAY-REQ-001), and the line's sound id resolves to a real, registered SoundEvent in SoundRegistration (AUDIO-REQ-001).
 - `void aForcedSignalEnqueuesALineForAPlayerInRangeAndResolvesItsSoundInTheRegistry(GameTestHelper helper)`

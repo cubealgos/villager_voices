@@ -17,6 +17,7 @@
       "villager_voices.fabric.display.DisplayQueueGameTest",
       "villager_voices.fabric.debug.DebugCommandGameTest",
       "villager_voices.fabric.sound.ReactionSoundGameTest",
+      "villager_voices.fabric.sound.GruntSequencingGameTest",
       "villager_voices.fabric.compat.TalkingStateSyncGameTest"
     ]
   },

@@ -14,6 +14,7 @@ import villager_voices.config.Config;
 import villager_voices.display.DisplayQueue;
 import villager_voices.fabric.catalogue.FabricLineCatalogue;
 import villager_voices.fabric.sound.FabricLineSink;
+import villager_voices.fabric.sound.GruntLengths;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,12 +23,18 @@ import java.util.Set;
 
 /**
  * VV-12, docs/spec/domains/compat.md {@code COMPAT-REQ-002}: a played reaction line marks the
- * villager talking server-side through {@code config.talkingDurationTicks()} and sends exactly one
- * {@link TalkingPayload} to the one player in range — a throwaway pipeline built by hand (the same
- * pattern {@code villager_voices.fabric.debug.DebugCommand} already uses for its own real-catalogue,
- * real-selection, forced-event testing), with {@link TalkingPayloadSender} substituted for a
- * capturing list instead of a real network send — {@code GameTestHelper}'s own mock players are not
- * real network-connected clients a sent payload could otherwise be observed arriving at.
+ * villager talking server-side through {@code config.talkingDurationTicks()} plus its grunt delay
+ * (VV-18) and sends exactly one {@link TalkingPayload} to the one player in range — a throwaway
+ * pipeline built by hand (the same pattern {@code villager_voices.fabric.debug.DebugCommand}
+ * already uses for its own real-catalogue, real-selection, forced-event testing), with
+ * {@link TalkingPayloadSender} substituted for a capturing list instead of a real network send —
+ * {@code GameTestHelper}'s own mock players are not real network-connected clients a sent payload
+ * could otherwise be observed arriving at.
+ *
+ * <p>Every shipped {@code trade_completed} line names the same grunt
+ * ({@code minecraft:entity.villager.trade}, docs/spec/domains/reaction-lines.md §3), so the
+ * expected extra duration is deterministic regardless of which of the four lines the real selector
+ * picks.
  */
 public final class TalkingStateSyncGameTest {
 
@@ -52,15 +59,21 @@ public final class TalkingStateSyncGameTest {
                 villager.getUUID(), VillagerReactionEvent.TRADE_COMPLETED, false, false, Set.of(player.getUUID()));
         bus.publish(signal);
 
+        long expectedGruntTicks = GruntLengths.ticksFor("minecraft:entity.villager.trade");
+        long expectedDuration = config.talkingDurationTicks() + expectedGruntTicks;
+
         helper.assertTrue(sync.talkingState().isTalking(villager.getUUID(), now),
                 "expected the villager marked talking as of the tick the line played");
-        helper.assertTrue(!sync.talkingState().isTalking(villager.getUUID(), now + config.talkingDurationTicks()),
-                "expected the mark to expire exactly config.talkingDurationTicks() later");
+        helper.assertTrue(sync.talkingState().isTalking(villager.getUUID(), now + config.talkingDurationTicks()),
+                "expected the mark to still be talking at config.talkingDurationTicks() alone -- VV-18's grunt delay extends it");
+        helper.assertTrue(!sync.talkingState().isTalking(villager.getUUID(), now + expectedDuration),
+                "expected the mark to expire exactly config.talkingDurationTicks() + the grunt's delay later");
 
         helper.assertTrue(captured.size() == 1, "expected exactly one payload sent, found " + captured.size());
         TalkingPayload payload = captured.get(0);
         helper.assertTrue(payload.villagerId().equals(villager.getUUID()), "expected the payload keyed to the villager that talked");
-        helper.assertTrue(payload.ticks() == config.talkingDurationTicks(), "expected the payload's own duration to match config.talkingDurationTicks()");
+        helper.assertTrue(payload.ticks() == expectedDuration,
+                "expected the payload's own duration to match config.talkingDurationTicks() + the grunt's delay");
 
         helper.succeed();
     }

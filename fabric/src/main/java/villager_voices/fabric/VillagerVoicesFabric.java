@@ -2,6 +2,7 @@ package villager_voices.fabric;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.fabricmc.loader.api.FabricLoader;
@@ -23,6 +24,7 @@ import villager_voices.fabric.debug.DebugCommand;
 import villager_voices.fabric.display.ActionBarDisplay;
 import villager_voices.fabric.sound.FabricLineSink;
 import villager_voices.fabric.sound.SoundRegistration;
+import villager_voices.fabric.sound.TickScheduler;
 
 /**
  * The mod's server-and-common entrypoint. Registers the 64 reaction {@code SoundEvent}s
@@ -58,6 +60,10 @@ import villager_voices.fabric.sound.SoundRegistration;
  * {@link VillagerEventSource#register}; VV-4/5/6's own event-hook registrations should stay
  * idempotent-safe against that, or unregister on {@code SERVER_STOPPING}, once that matters in
  * practice (recorded in VV-8's own Findings).
+ *
+ * <p>{@link #tickScheduler()} (VV-18) is drained every {@code ServerTickEvents.END_SERVER_TICK} and
+ * cleared on {@code SERVER_STOPPING}, so a grunt-delayed line-sound task never fires against a level
+ * that has since been unloaded.
  */
 public final class VillagerVoicesFabric implements ModInitializer {
     public static final String MOD_ID = "villager_voices";
@@ -65,6 +71,14 @@ public final class VillagerVoicesFabric implements ModInitializer {
 
     private static volatile DisplayQueue displayQueue = new DisplayQueue();
     private static volatile VillagerEventBus eventBus = new VillagerEventBus();
+
+    /**
+     * The mod's one grunt-then-line delay scheduler (VV-18, docs/spec/domains/audio.md
+     * {@code AUDIO-REQ-007}) — a single long-lived instance, unlike {@link #displayQueue} and
+     * {@link #eventBus} it is never rebuilt on {@code SERVER_STARTED} (it carries no config-sized
+     * state of its own), only drained every tick and cleared on {@code SERVER_STOPPING} below.
+     */
+    private static final TickScheduler tickScheduler = new TickScheduler();
 
     /** The currently live per-player action-bar queue (docs/spec/domains/display.md §3). */
     public static DisplayQueue displayQueue() {
@@ -74,6 +88,11 @@ public final class VillagerVoicesFabric implements ModInitializer {
     /** The currently live reaction pipeline (docs/spec/domains/reaction.md). */
     public static VillagerEventBus eventBus() {
         return eventBus;
+    }
+
+    /** The mod's one grunt-then-line delay scheduler (VV-18). */
+    public static TickScheduler tickScheduler() {
+        return tickScheduler;
     }
 
     @Override
@@ -86,6 +105,9 @@ public final class VillagerVoicesFabric implements ModInitializer {
             .registerReloadListener(CatalogueReloadListener.id(), new CatalogueReloadListener());
 
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> tickScheduler.drain(server.getTickCount()));
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> tickScheduler.clear());
 
         if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
             DebugCommand.register();

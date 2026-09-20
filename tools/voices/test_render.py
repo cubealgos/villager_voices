@@ -62,7 +62,7 @@ class LoadCatalogueTest(unittest.TestCase):
     def test_reads_all_64_lines_from_the_real_catalogue(self):
         catalogue = render.load_catalogue()
         self.assertEqual(len(catalogue), 64)
-        self.assertEqual(catalogue["trade_completed.1"], "Mrrgh — traded! Nice.")
+        self.assertEqual(catalogue["trade_completed.1"], "Traded! Nice.")
 
     def test_line_ids_match_sound_naming(self):
         for line_id in render.load_catalogue():

@@ -8,24 +8,28 @@ category: "villager_voices"
 
 ## 1. Purpose
 
-The actual 1.0 line text: 4 original lines per event, English with villager hums, in the spirit of
-Kevin's own example phrasing ("Mrrgh — traded! Nice." / "Hmnh, that'll do.",
-`vault/technical/minecraft/villager-events-sounds-and-emf-compat.md` §"Proposal section"), never
-derived from or resembling any third-party mod, add-on, or show's published dialogue — no such
-dialogue was found published anywhere to compare against in any case (research §E2, "Not
-confirmed"). This is data, referenced by `domains/reaction.md`'s mechanism and requirements, not a
-second copy of them.
+The actual 1.0 line text: 4 original lines per event, English words only, each paired with an
+optional `grunt` naming the game's own vanilla villager sound (VV-18, `AUDIO-DEC-005`) rather than
+a written hum. Originally written with villager hums inline, in the spirit of Kevin's own example
+phrasing ("Mrrgh — traded! Nice." / "Hmnh, that'll do.",
+`vault/technical/minecraft/villager-events-sounds-and-emf-compat.md` §"Proposal section"); Kevin's
+own round-2 sample feedback replaced the written hum with the game's real sound ("stuff like
+'hrngg' should be replaced with the actual fitting villager sound from the game," `AUDIO-DEC-005`),
+so §3's subtitles are words only from VV-18 on. Never derived from or resembling any third-party
+mod, add-on, or show's published dialogue — no such dialogue was found published anywhere to
+compare against in any case (research §E2, "Not confirmed"). This is data, referenced by
+`domains/reaction.md`'s mechanism and requirements, not a second copy of them.
 
-## 2. JSON shape (confirmed at the first ticket, `VV-3`)
+## 2. JSON shape (confirmed at the first ticket, `VV-3`; `grunt` added by `VV-18`)
 
 ```json
 // data/villager_voices/reaction/trade_completed.json
 {
   "lines": [
-    { "subtitle": "Mrrgh — traded! Nice.", "sound": "villager_voices:reaction.trade_completed.1" },
-    { "subtitle": "Hmnh, good trade, that.", "sound": "villager_voices:reaction.trade_completed.2" },
-    { "subtitle": "Ha! Emeralds for me.", "sound": "villager_voices:reaction.trade_completed.3" },
-    { "subtitle": "Mmh-hmm, pleasure doing business.", "sound": "villager_voices:reaction.trade_completed.4" }
+    { "subtitle": "Traded! Nice.", "sound": "villager_voices:reaction.trade_completed.1", "grunt": "minecraft:entity.villager.trade" },
+    { "subtitle": "Good trade, that.", "sound": "villager_voices:reaction.trade_completed.2", "grunt": "minecraft:entity.villager.trade" },
+    { "subtitle": "Ha! Emeralds for me.", "sound": "villager_voices:reaction.trade_completed.3", "grunt": "minecraft:entity.villager.trade" },
+    { "subtitle": "Pleasure doing business.", "sound": "villager_voices:reaction.trade_completed.4", "grunt": "minecraft:entity.villager.trade" }
   ]
 }
 ```
@@ -34,31 +38,41 @@ second copy of them.
 its `sounds.json` entry, and its `subtitles.villager_voices.reaction.<event>.<n>` lang key
 one-to-one (`domains/audio.md` §2). `subtitle` here is the same text as the lang file's own string —
 duplicated deliberately so a datapack can override which lines are eligible and read their text
-without cross-referencing the lang file (`domains/reaction.md` `REACTION-DEC-001`).
+without cross-referencing the lang file (`domains/reaction.md` `REACTION-DEC-001`). `grunt` is
+optional (a line may omit it) and names a vanilla villager `SoundEvent` id, played first, the line
+delayed until it finishes (`domains/audio.md` `AUDIO-REQ-007`); it is never this mod's own namespace
+and never validated for existence by `common`'s codec, only by shape (`domains/audio.md` §3).
 
 ## 3. The sixteen catalogues
 
-| Event | 1 | 2 | 3 | 4 |
-|---|---|---|---|---|
-| `trade_completed` | Mrrgh — traded! Nice. | Hmnh, good trade, that. | Ha! Emeralds for me. | Mmh-hmm, pleasure doing business. |
-| `offer_opened` | Mrgh? Lookin' to trade? | Hmm, what've you got? | Ah, a customer. | Mmh, step right up. |
-| `hurt` | Ow! Ow ow ow! | Hngh — that hurt! | Mrgh! Watch it! | Ah! Rude! |
-| `killed` | Mrgh — no—! | Hnnh... unfair... | Wha— no! | Argh! |
-| `zombified` | Nnngh... cold... | Grrh... something's wrong... | Nnh, hungry... | Hrrgh... |
-| `cured` | Mrgh! Warm again! | Hmm, that's better. | Ah, thank you! | Mmh, good as new. |
-| `level_up` | Ha! Promoted! | Mrgh, business is booming. | Hmnh, moving up in the world. | Ah, a raise, of sorts. |
-| `restock` | Hmm, restocking. | Mrgh, more goods, fresh in. | Ah, business never sleeps. | Mmh, back to work. |
-| `sleep` | Mrgh... bed time. | Hnnh, goodnight. | Mmh... zzz. | Ahh, rest at last. |
-| `wake` | Mrgh, morning. | Hmm, another day. | Ah, well rested. | Mmh, let's get to it. |
-| `raid_bell` | Mrgh! Raid! Raid! | Hnngh — take cover! | Ah! Not again! | Everyone, hide! |
-| `golem_summoned` | Ha! Reinforcements. | Mrgh, good, backup. | Ah, our protector. | Mmh, feel safer now. |
-| `panic` | Ah! Ah! Run! | Mrgh — danger! | Hnngh, get away! | Ah, help! |
-| `player_staring` | Mrgh... can I help you? | Hmm, something the matter? | Ah, personal space, please. | Mmh, yes? |
-| `breeding` | Hmm, ah, private moment. | Mrgh, look away, please. | Ah— not now. | Mmh, a bit of privacy? |
-| `baby_grows` | Ha! Grown up already. | Mrgh, my, how time flies. | Ah, look at them now. | Mmh, all grown up. |
+Every 1.0 line's `grunt` is the same vanilla event across all four lines of its own event (VV-18's
+own choice, for a consistent voice per event rather than per line — nothing in `AUDIO-DEC-005`
+requires variation within an event).
+
+| Event | 1 | 2 | 3 | 4 | Grunt |
+|---|---|---|---|---|---|
+| `trade_completed` | Traded! Nice. | Good trade, that. | Ha! Emeralds for me. | Pleasure doing business. | `entity.villager.trade` |
+| `offer_opened` | Lookin' to trade? | Hmm, what've you got? | Ah, a customer. | Step right up. | `entity.villager.ambient` |
+| `hurt` | Ow! Ow ow ow! | That hurt! | Watch it! | Ah! Rude! | `entity.villager.hurt` |
+| `killed` | No—! | Unfair... | Wha— no! | Argh! | `entity.villager.death` |
+| `zombified` | Cold... | Something's wrong... | Hungry... | Can't... think... | `entity.villager.ambient` |
+| `cured` | Warm again! | Hmm, that's better. | Ah, thank you! | Good as new. | `entity.villager.ambient` |
+| `level_up` | Ha! Promoted! | Business is booming. | Moving up in the world. | Ah, a raise, of sorts. | `entity.villager.celebrate` |
+| `restock` | Hmm, restocking. | More goods, fresh in. | Ah, business never sleeps. | Back to work. | `entity.villager.ambient` |
+| `sleep` | Bed time. | Goodnight. | Zzz. | Ahh, rest at last. | `entity.villager.ambient` |
+| `wake` | Morning. | Hmm, another day. | Ah, well rested. | Let's get to it. | `entity.villager.ambient` |
+| `raid_bell` | Raid! Raid! | Take cover! | Ah! Not again! | Everyone, hide! | `entity.villager.ambient` |
+| `golem_summoned` | Ha! Reinforcements. | Good, backup. | Ah, our protector. | Feel safer now. | `entity.villager.celebrate` |
+| `panic` | Ah! Ah! Run! | Danger! | Get away! | Ah, help! | `entity.villager.ambient` |
+| `player_staring` | Can I help you? | Hmm, something the matter? | Ah, personal space, please. | Yes? | `entity.villager.ambient` |
+| `breeding` | Hmm, ah, private moment. | Look away, please. | Ah— not now. | A bit of privacy? | `entity.villager.ambient` |
+| `baby_grows` | Ha! Grown up already. | My, how time flies. | Ah, look at them now. | All grown up. | `entity.villager.ambient` |
 
 16 events × 4 lines = **64 lines total** at 1.0, one registered `SoundEvent` each
-(`domains/audio.md` `AUDIO-REQ-001`).
+(`domains/audio.md` `AUDIO-REQ-001`). Every `grunt` in this table is a vanilla `minecraft:` id, listed
+above with the shared `entity.villager.` prefix omitted for width; none of the sixteen 1.0 events
+uses a profession-specific `work_<profession>` grunt (`domains/audio.md` §3's category rule allows
+it, but no 1.0 line's text is profession-specific enough to call for one).
 
 ## 4. Use cases
 
@@ -81,4 +95,8 @@ names, the one mechanical thing left open, are confirmed by `VV-3`: a top-level 
 written. Parsing, validation (`LINES-REQ-003`'s id pattern, `REACTION-REQ-012`'s unregistered-sound
 rejection) and datapack-override behaviour live in `common`'s `villager_voices.catalogue` package
 (`Catalogue`/`CatalogueCodec`); loading that JSON off disk is `fabric`'s `CatalogueReloadListener`,
-registered through Fabric's resource loader API.
+registered through Fabric's resource loader API. `VV-18` adds the optional `grunt` field to that
+same codec (shape-validated only, never event-existence-validated in `common`) and to
+`CatalogueReloadListener`'s own registered-`SoundEvent` check (a warning, never a rejection, if a
+grunt doesn't resolve) — see `domains/audio.md` §3/§5/§8 (`AUDIO-REQ-007`, `AUDIO-DEC-005`) for the
+playback behaviour itself, which this file does not repeat.

@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Mrgh — no—!",
-      "sound": "villager_voices:reaction.killed.1"
+      "subtitle": "No—!",
+      "sound": "villager_voices:reaction.killed.1",
+      "grunt": "minecraft:entity.villager.death"
     },
     {
-      "subtitle": "Hnnh... unfair...",
-      "sound": "villager_voices:reaction.killed.2"
+      "subtitle": "Unfair...",
+      "sound": "villager_voices:reaction.killed.2",
+      "grunt": "minecraft:entity.villager.death"
     },
     {
       "subtitle": "Wha— no!",
-      "sound": "villager_voices:reaction.killed.3"
+      "sound": "villager_voices:reaction.killed.3",
+      "grunt": "minecraft:entity.villager.death"
     },
     {
       "subtitle": "Argh!",
-      "sound": "villager_voices:reaction.killed.4"
+      "sound": "villager_voices:reaction.killed.4",
+      "grunt": "minecraft:entity.villager.death"
     }
   ]
 }

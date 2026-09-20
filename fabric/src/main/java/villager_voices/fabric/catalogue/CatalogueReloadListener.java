@@ -1,5 +1,6 @@
 package villager_voices.fabric.catalogue;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import villager_voices.catalogue.Catalogue;
 import villager_voices.catalogue.CatalogueLoadException;
+import villager_voices.catalogue.Line;
 import villager_voices.fabric.VillagerVoicesFabric;
 import villager_voices.fabric.sound.SoundRegistration;
 
@@ -35,6 +37,15 @@ import java.util.Map;
  * first, from {@link VillagerVoicesFabric#onInitialize()}, and register all 64 ids before this
  * listener's first {@code prepare()} ever runs. {@code common}'s own codec and its rejection path
  * are already fully exercised with a fake predicate in {@code common/src/test}.
+ *
+ * <p>VV-18's own {@code grunt} check ({@code AUDIO-REQ-007}) is deliberately not a rejection like
+ * {@code sound}'s: a grunt names a <em>vanilla</em> {@code SoundEvent}, resolved directly against
+ * {@code BuiltInRegistries.SOUND_EVENT} rather than {@link SoundRegistration} (this mod's own 64),
+ * and a missing one is never fatal ({@code AUDIO-DEC-005}: "a line without a grunt plays as
+ * before") — {@link #validateGrunts} only logs a warning naming the file and line, once per load,
+ * so an operator notices a typo without a whole event's catalogue failing to load over it.
+ * {@link villager_voices.fabric.sound.ReactionSoundPlayer} makes the same check again at play time
+ * (defensively; a datapack could still change between load and play) and falls back the same way.
  */
 public final class CatalogueReloadListener extends SimplePreparableReloadListener<Catalogue> {
 
@@ -70,7 +81,27 @@ public final class CatalogueReloadListener extends SimplePreparableReloadListene
                 throw new CatalogueLoadException("failed to read " + resourceId + ": " + e.getMessage());
             }
         }
-        return builder.build();
+        Catalogue catalogue = builder.build();
+        validateGrunts(catalogue);
+        return catalogue;
+    }
+
+    /**
+     * Logs a warning for every line whose {@code grunt} doesn't currently name a registered vanilla
+     * {@code SoundEvent} — never rejects the load ({@code AUDIO-DEC-005}: "a line without a grunt
+     * plays as before").
+     */
+    private static void validateGrunts(Catalogue catalogue) {
+        for (String eventId : catalogue.events()) {
+            for (Line line : catalogue.linesFor(eventId)) {
+                String grunt = line.grunt();
+                if (grunt != null && !BuiltInRegistries.SOUND_EVENT.containsKey(Identifier.parse(grunt))) {
+                    LOGGER.warn("villager_voices: data/villager_voices/reaction/{}.json: line {} names grunt \"{}\", "
+                            + "which is not a registered SoundEvent -- the line will play without it",
+                        eventId, line.soundId(), grunt);
+                }
+            }
+        }
     }
 
     @Override
