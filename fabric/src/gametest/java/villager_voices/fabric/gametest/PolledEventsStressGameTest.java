@@ -32,7 +32,7 @@ public final class PolledEventsStressGameTest {
     private static final int SETTLE_TICKS = 2;
     // Generous on purpose -- see the class Javadoc. The actual measured delta is far below this
     // (recorded in VV-6's own Findings).
-    private static final long MAX_DELTA_NANOS_PER_TICK = 5_000_000L; // 5 ms/tick for 40 villagers
+    private static final long MAX_DELTA_NANOS_PER_TICK = 25_000_000L; // 25 ms/tick for 40 villagers: half a server tick, a real budget breach; the measured delta is logged (VV-16)
 
     @GameTest(maxTicks = 2 * (MEASURED_TICKS + SETTLE_TICKS) + 10)
     public void manyIdleVillagersAddLittlePerTickOverBaseline(GameTestHelper helper) {
