@@ -14,8 +14,8 @@ signature page before calling into a package you did not write.
 
 | package | project | types | what |
 |---|---|---|---|
-| `villager_voices` | common | VillagerEventBus, VillagerEventSource, VillagerReactionEvent, VillagerReactionSignal | Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001). |
-| `villager_voices` | common (test) | VillagerEventBusTest |  |
+| `villager_voices` | common | LineCatalogue, LineRef, LineSelector, LineSink, ReactionRules, VillagerEventBus, VillagerEventSource, VillagerReactionEvent, VillagerReactionSignal | Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001). |
+| `villager_voices` | common (test) | LineSelectorTest, ReactionRulesTest, VillagerEventBusReactionTest, VillagerEventBusTest |  |
 | `villager_voices.fabric` | fabric | FabricVillagerEventSource, VillagerVoicesFabric |  |
 | `villager_voices.fabric.client` | fabric | VillagerVoicesFabricClient |  |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
