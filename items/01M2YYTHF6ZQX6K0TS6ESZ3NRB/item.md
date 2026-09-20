@@ -32,13 +32,13 @@ never a silent no-op.
 
 ## Acceptance criteria
 
-- [ ] All eight events fire their hook and reach the bus in a real Fabric 26.2 world, proven by a
+- [x] All eight events fire their hook and reach the bus in a real Fabric 26.2 world, proven by a
       game test per event (`docs/spec/operations/testing.md` "Game tests" row, `TEST-REQ-003`).
-- [ ] The `trade_completed` mixin observes `notifyTrade` without altering its return value or the
+- [x] The `trade_completed` mixin observes `notifyTrade` without altering its return value or the
       trade's own outcome (`TEST-REQ-003`).
-- [ ] A raid-bell burst is observable as a queued sequence once `VV-7` lands (not required to
+- [x] A raid-bell burst is observable as a queued sequence once `VV-7` lands (not required to
       display correctly in this ticket, only to fire the event).
-- [ ] `mixins/villager_voices.mixins.json`'s `mixins` array is non-empty for the first time since
+- [x] `mixins/villager_voices.mixins.json`'s `mixins` array is non-empty for the first time since
       `VV-1`; `client` stays empty (all eight are server-side).
 
 ## Constraints and prior findings
