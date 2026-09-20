@@ -31,13 +31,13 @@ known, not exploratory.
 
 ## Acceptance criteria
 
-- [ ] A single line reaches the correct player's action bar via `sendOverlayMessage`, formatted
+- [x] A single line reaches the correct player's action bar via `sendOverlayMessage`, formatted
       `"<profession>: <line>"` (`DISPLAY-REQ-001`, `DISPLAY-REQ-004`).
-- [ ] A burst of multiple lines for one player (e.g. a raid-bell scenario) displays each in order,
+- [x] A burst of multiple lines for one player (e.g. a raid-bell scenario) displays each in order,
       held for at least the minimum display time, never overlapping or dropped (`DISPLAY-REQ-003`,
       `DISPLAY-FAIL-002`).
-- [ ] A player outside hearing range never receives the line (`DISPLAY-REQ-002`).
-- [ ] `display.actionBar` and vanilla subtitles are independently toggleable in principle — the
+- [x] A player outside hearing range never receives the line (`DISPLAY-REQ-002`).
+- [x] `display.actionBar` and vanilla subtitles are independently toggleable in principle — the
       action bar push and any subtitle path do not depend on each other (`DISPLAY-REQ-006`); full
       config wiring is `VV-8`'s ticket, this one only needs to not couple the two channels.
 
