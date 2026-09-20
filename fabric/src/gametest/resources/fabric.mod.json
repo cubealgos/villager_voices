@@ -14,7 +14,8 @@
       "villager_voices.fabric.gametest.PolledEventsStressGameTest",
       "villager_voices.fabric.gametest.CombatAndStateGameTest",
       "villager_voices.fabric.gametest.CatalogueGameTest",
-      "villager_voices.fabric.display.DisplayQueueGameTest"
+      "villager_voices.fabric.display.DisplayQueueGameTest",
+      "villager_voices.fabric.debug.DebugCommandGameTest"
     ]
   },
   "depends": {
