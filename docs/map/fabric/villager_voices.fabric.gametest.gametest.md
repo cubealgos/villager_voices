@@ -5,7 +5,20 @@
 Every type with its summary and every non-private constructor, method and constant. The
 signature is the contract; read the source only when the summary is not enough.
 
+### `class PanicGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/PanicGameTest.java`
+VV-6: `panic` fires exactly once per panic episode -- edge-detected, not once per tick while panicking (docs/spec/domains/reaction.md §3 `panic` row, `PanicDetector`'s own contract, `REACTION-FAIL-004`).
+- `void panicFiresOnceWhenBrainActivityBecomesPanic(GameTestHelper helper)`
+- `void panicDoesNotFireAgainWhileStillPanicking(GameTestHelper helper)`
+
+### `class PolledEventsStressGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/PolledEventsStressGameTest.java`
+VV-6 acceptance criterion: a large-village stress check -- many loaded villagers, none panicking or stared at -- shows no measurable steady-state allocation from the poll (docs/spec/domains/reaction.md `REACTION-FAIL-004`, docs/spec/04-architecture.md `ARCH-FAIL-004`).
+
 ### `class SmokeGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/SmokeGameTest.java`
 VV-1: the mod loads.
 - `void theModLoads(GameTestHelper helper)`
+
+### `class StareGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/StareGameTest.java`
+VV-6: `player_staring` fires once a player has kept a villager within StareDetector#DOT_THRESHOLD/StareDetector#RANGE_BLOCKS for StareDetector#REQUIRED_TICKS consecutive ticks, and not again while the same stare continues unbroken (docs/spec/domains/reaction.md §3 `player_staring` row; the three thresholds are VV-6's own proposal -- no research precedent -- recorded in the ticket's own Findings).
+- `void playerStaringFiresAfterRequiredTicksAtCloseRange(GameTestHelper helper)`
+- `void playerStaringDoesNotFireBeyondRange(GameTestHelper helper)`
 
