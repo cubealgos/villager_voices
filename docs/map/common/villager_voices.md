@@ -7,8 +7,38 @@ signature is the contract; read the source only when the summary is not enough.
 
 Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001).
 
+### `interface LineCatalogue` — `common/src/main/java/villager_voices/LineCatalogue.java`
+Supplies the eligible lines for one event.
+- `List<LineRef> linesFor(VillagerReactionEvent event)` — Every eligible line for event, in no particular order — LineSelector does the random pick.
+
+### `record LineRef(VillagerReactionEvent event, String id)` — `common/src/main/java/villager_voices/LineRef.java`
+A reference to one catalogue line for one event, opaque outside common: id is whatever unique key the eventual LineCatalogue implementation assigns each entry (VV-3 proposes the sound id, e.g.
+
+### `class LineSelector` — `common/src/main/java/villager_voices/LineSelector.java`
+The selection rule (docs/spec/domains/reaction.md "Selection rule", REACTION-REQ-005): a random pick among an event's eligible lines, excluding the one line that played last for that villager on that event — unless excluding it would leave nothing to pick from, in which case the exclusion is dropped and a repeat is allowed rather than the event producing no line at all.
+- `Optional<LineRef> select(List<LineRef> eligible, Optional<LineRef> lastPlayed, IntUnaryOperator roll)` — be empty bound, e.g.
+
+### `interface LineSink` — `common/src/main/java/villager_voices/LineSink.java`
+Shows a selected line to whichever players should receive it.
+- `void show(UUID villagerId, Set<UUID> playerIds, LineRef line)` — Shows line for villagerId to playerIds.
+
+### `class ReactionRules` — `common/src/main/java/villager_voices/ReactionRules.java`
+Pure cooldown, rate-limit, silence, and last-played-line bookkeeping for one VillagerEventBus (docs/spec/domains/reaction.md §3, REACTION-REQ-005–010).
+- `long DEFAULT_PER_EVENT_COOLDOWN_TICKS` — Per-villager-per-event cooldown default: 60s at 20 ticks/s (REACTION-REQ-006).
+- `long DEFAULT_PER_VILLAGER_GLOBAL_COOLDOWN_TICKS` — Per-villager-global cooldown default: 5s at 20 ticks/s (REACTION-REQ-007).
+- `long DEFAULT_PER_PLAYER_RATE_LIMIT_TICKS` — Per-player server-wide rate-limit window default: 1 line per 2s (REACTION-REQ-008).
+- `ReactionRules()` — Uses the spec's proposed defaults (§3's "Cooldowns and rate limit" table).
+- `ReactionRules(long perEventCooldownTicks, long perVillagerGlobalCooldownTicks, long perPlayerRateLimitTicks)`
+- `boolean permits(UUID villagerId, VillagerReactionEvent event, boolean villagerAsleep, boolean villagerBaby, long nowTicks)` — Whether a just-detected event on villagerId should reach selection: not silenced (REACTION-REQ-009, REACTION-REQ-010), not within its own per-event cooldown (REACTION-REQ-006), and not within the villager's global cooldown (REACTION-REQ-007).
+- `boolean isSilenced(VillagerReactionEvent event, boolean villagerAsleep, boolean villagerBaby)` — Whether event is suppressed by the sleep/baby silence rules alone, independent of any cooldown: asleep suppresses every event but SLEEP (REACTION-REQ-009); baby suppresses every event but BABY_GROWS (REACTION-REQ-010) — the two combine, so a sleeping baby's SLEEP event is still silenced by the baby rule.
+- `Optional<LineRef> lastPlayed(UUID villagerId, VillagerReactionEvent event)` — The line that played last for villagerId on event, if any.
+- `void record(UUID villagerId, VillagerReactionEvent event, LineRef line, long nowTicks)` — Records that line was selected for villagerId/event at nowTicks: starts both cooldown windows and remembers the line for the next no-immediate-repeat selection (REACTION-REQ-005).
+- `boolean tryConsumePlayerRate(UUID playerId, long nowTicks)` — Attempts to consume playerId's server-wide rate-limit slot at nowTicks (REACTION-REQ-008), independent of how many villagers are nearby: returns true and starts a fresh window when the player's last line was at least perPlayerRateLimitTicks ago (or never); returns false and leaves the window untouched otherwise.
+
 ### `class VillagerEventBus` — `common/src/main/java/villager_voices/VillagerEventBus.java`
-Dispatches VillagerReactionSignals from every discovered VillagerEventSource to its subscribers.
+Dispatches VillagerReactionSignals from every discovered VillagerEventSource to its subscribers (VV-1's original behaviour, unchanged and always run first), and — once configured with a LineCatalogue, a LineSink, a clock, and a random source — also runs each published signal through ReactionRules and LineSelector and hands the selected line to the sink (docs/spec/domains/reaction.md §3, REACTION-REQ-005–010, VV-2).
+- `VillagerEventBus()` — No reaction pipeline configured: #publish only fans signals out to subscribers.
+- `VillagerEventBus(LineCatalogue catalogue, LineSink sink, LongSupplier clock, IntUnaryOperator roll)` — new Random()::nextInt
 - `List<VillagerEventSource> discoverSources()` — Discovers every VillagerEventSource on the classpath via ServiceLoader.
 - `void subscribe(Consumer<VillagerReactionSignal> subscriber)`
 - `void publish(VillagerReactionSignal signal)`
@@ -20,6 +50,7 @@ A loader-supplied source of VillagerReactionSignals: native events, mixins, or a
 ### `enum VillagerReactionEvent` — `common/src/main/java/villager_voices/VillagerReactionEvent.java`
 The 16 events a villager can react to (docs/spec/domains/reaction.md §3).
 
-### `record VillagerReactionSignal(UUID villagerId, VillagerReactionEvent event)` — `common/src/main/java/villager_voices/VillagerReactionSignal.java`
+### `record VillagerReactionSignal(UUID villagerId, VillagerReactionEvent event, boolean villagerAsleep, boolean villagerBaby, Set<UUID> nearbyPlayerIds)` — `common/src/main/java/villager_voices/VillagerReactionSignal.java`
 One detected event, as reported by a loader adapter.
+- `VillagerReactionSignal(UUID villagerId, VillagerReactionEvent event)`
 
