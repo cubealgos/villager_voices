@@ -13,6 +13,14 @@ signature is the contract; read the source only when the summary is not enough.
 - `void singleLineCatalogueRepeatsWhenExcludingItLeavesNothing()`
 - `void lastPlayedNotPresentInEligibleIsHarmless()`
 
+### `class PanicDetectorTest` — `common/src/test/java/villager_voices/PanicDetectorTest.java`
+- `void firstPanicTickFires()`
+- `void staysCalmNeverFires()`
+- `void steadyPanicFiresOnlyOnce()`
+- `void panicEndingThenRestartingFiresAgain()`
+- `void oneRapidFlickerPerTickFiresEveryRisingEdge()`
+- `void panicIsIndependentPerVillager()`
+
 ### `class ReactionRulesTest` — `common/src/test/java/villager_voices/ReactionRulesTest.java`
 - `void perEventCooldownSuppressesWithinWindow()`
 - `void perEventCooldownAllowsExactlyAtWindowBoundary()`
@@ -34,6 +42,17 @@ signature is the contract; read the source only when the summary is not enough.
 - `void suppressedDetectionDoesNotStartACooldownWindow()`
 - `void defaultsMatchTheSpecsProposedTable()`
 
+### `class StareDetectorTest` — `common/src/test/java/villager_voices/StareDetectorTest.java`
+- `void doesNotFireBeforeRequiredTicksElapse()`
+- `void firesExactlyOnTheRequiredTick()`
+- `void doesNotFireAgainWhileTheStareContinuesUnbroken()`
+- `void dotDroppingBelowThresholdBreaksTheStare()`
+- `void leavingRangeBreaksTheStare()`
+- `void aBrokenStareFiresAgainOnceRequiredTicksElapseAnew()`
+- `void exactlyAtDotThresholdCounts()`
+- `void exactlyAtRangeBoundaryCounts()`
+- `void stareIsIndependentPerPlayerVillagerPair()`
+
 ### `class VillagerEventBusReactionTest` — `common/src/test/java/villager_voices/VillagerEventBusReactionTest.java`
 Exercises VillagerEventBus's reaction pipeline (VV-2) end to end with a fake LineCatalogue, a fake LineSink, a fake clock, and a fixed roll -- the shape docs/spec/operations/testing.md calls for, without any Minecraft dependency.
 - `void publishesSelectedLineToSink()`
@@ -41,6 +60,8 @@ Exercises VillagerEventBus's reaction pipeline (VV-2) end to end with a fake Lin
 - `void sleepingVillagerProducesNoLineForANonSleepEvent()`
 - `void rateLimitedPlayerIsExcludedFromRecipientsButOthersStillReceiveTheLine()`
 - `void noRepeatAcrossTwoWellSeparatedPublishes()`
+- `void publishBypassingRulesIgnoresTheCooldownWithinItsWindow()` — VV-13: the debug command's whole point -- an otherwise-throttled event still reaches the sink.
+- `void publishBypassingRulesStillSilencesASleepingVillager()` — VV-13: the bypass skips cooldowns, not the sleep/baby silence rule.
 - `void theFiveArgumentConstructorUsesTheInjectedReactionRulesInsteadOfTheSpecDefaults()`
 - `void unconfiguredBusStillFansOutToSubscribersOnly()`
 

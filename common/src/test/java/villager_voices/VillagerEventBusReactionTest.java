@@ -146,6 +146,40 @@ class VillagerEventBusReactionTest {
         assertEquals(LINE_2, sink.shown.get(1).line());
     }
 
+    /** {@code VV-13}: the debug command's whole point -- an otherwise-throttled event still reaches the sink. */
+    @Test
+    void publishBypassingRulesIgnoresTheCooldownWithinItsWindow() {
+        FakeCatalogue catalogue = new FakeCatalogue(Map.of(
+                VillagerReactionEvent.TRADE_COMPLETED, List.of(LINE_1, LINE_2)));
+        RecordingSink sink = new RecordingSink();
+        AtomicLong clock = new AtomicLong(0);
+        VillagerEventBus bus = bus(catalogue, sink, clock);
+
+        VillagerReactionSignal signal = new VillagerReactionSignal(
+                VILLAGER, VillagerReactionEvent.TRADE_COMPLETED, false, false, Set.of(PLAYER_A));
+        bus.publish(signal);
+        clock.set(1); // well within the default 60s/1200-tick per-event cooldown
+        bus.publishBypassingRules(signal);
+
+        assertEquals(2, sink.shown.size());
+    }
+
+    /** {@code VV-13}: the bypass skips cooldowns, not the sleep/baby silence rule. */
+    @Test
+    void publishBypassingRulesStillSilencesASleepingVillager() {
+        FakeCatalogue catalogue = new FakeCatalogue(Map.of(
+                VillagerReactionEvent.TRADE_COMPLETED, List.of(LINE_1)));
+        RecordingSink sink = new RecordingSink();
+        AtomicLong clock = new AtomicLong(0);
+        VillagerEventBus bus = bus(catalogue, sink, clock);
+
+        VillagerReactionSignal signal = new VillagerReactionSignal(
+                VILLAGER, VillagerReactionEvent.TRADE_COMPLETED, true, false, Set.of(PLAYER_A));
+        bus.publishBypassingRules(signal);
+
+        assertTrue(sink.shown.isEmpty());
+    }
+
     @Test
     void theFiveArgumentConstructorUsesTheInjectedReactionRulesInsteadOfTheSpecDefaults() {
         // A custom per-event cooldown far shorter than the spec's proposed 1200-tick default: if

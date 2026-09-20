@@ -16,6 +16,7 @@ import villager_voices.display.DisplayQueue;
 import villager_voices.fabric.catalogue.CatalogueReloadListener;
 import villager_voices.fabric.catalogue.FabricLineCatalogue;
 import villager_voices.fabric.config.ConfigLoader;
+import villager_voices.fabric.debug.DebugCommand;
 import villager_voices.fabric.display.ActionBarDisplay;
 import villager_voices.fabric.sound.FabricLineSink;
 import villager_voices.fabric.sound.SoundRegistration;
@@ -28,15 +29,30 @@ import villager_voices.fabric.sound.SoundRegistration;
  * {@link VillagerEventBus}, the {@link DisplayQueue} sized from it, and every
  * {@link VillagerEventSource}'s registration against that bus) is built once
  * {@link ServerLifecycleEvents#SERVER_STARTED} fires, in {@link #onServerStarted}
- * (docs/spec/contracts/data-contract.md: the config file is "read on server start").
+ * (docs/spec/contracts/data-contract.md: the config file is "read on server start"). The
+ * development-only {@code /villager_voices debug} command (VV-13) registers at mod init, same as
+ * before this ticket — it builds its own throwaway {@link VillagerEventBus} per invocation
+ * ({@code DebugCommand}'s own Javadoc) and only ever reads {@link #displayQueue()}, so it needs no
+ * server-started timing of its own.
  *
  * <p>{@link #displayQueue()} and {@link #eventBus()} expose whichever instance is currently live —
- * the empty pre-server defaults before {@link #onServerStarted} first runs, the config-sized ones
- * after. A world restart within one client session (leaving a singleplayer world and starting or
+ * the empty pre-server defaults constructed at class init below before {@link #onServerStarted}
+ * first runs, the config-sized ones after. Every publisher into {@link #eventBus()} (the mixins,
+ * via each {@code villager_voices.fabric.events} class's own static {@code bus} field; the poll in
+ * {@code PolledEvents}) reaches it only through whatever bus {@link VillagerEventSource#register}
+ * was called with — so a mixin firing before {@code SERVER_STARTED} publishes into that empty
+ * pre-server bus (a real, valid instance with no catalogue/sink/clock/roll configured yet, never
+ * {@code null}) rather than NPEing; {@code VillagerEventBus#publish} on such an unconfigured bus
+ * simply fans the signal out to subscribers and skips the reaction pipeline (its own documented
+ * no-argument-constructor behaviour). {@code TradeAndSocialEvents.publish} additionally guards its
+ * own static {@code bus} field against still being {@code null} at that point, for the same
+ * before-server-started window.
+ *
+ * <p>A world restart within one client session (leaving a singleplayer world and starting or
  * loading another) re-fires {@code SERVER_STARTED} and rebuilds both, including re-running every
  * {@link VillagerEventSource#register}; VV-4/5/6's own event-hook registrations should stay
- * idempotent-safe against that, or unregister on {@code SERVER_STOPPING}, once they exist (recorded
- * in this ticket's Findings — no such registration exists yet to be affected).
+ * idempotent-safe against that, or unregister on {@code SERVER_STOPPING}, once that matters in
+ * practice (recorded in VV-8's own Findings).
  */
 public final class VillagerVoicesFabric implements ModInitializer {
     public static final String MOD_ID = "villager_voices";
@@ -63,6 +79,10 @@ public final class VillagerVoicesFabric implements ModInitializer {
             .registerReloadListener(CatalogueReloadListener.id(), new CatalogueReloadListener());
 
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            DebugCommand.register();
+        }
 
         LOGGER.info("Wait, they talk now? ready");
     }
