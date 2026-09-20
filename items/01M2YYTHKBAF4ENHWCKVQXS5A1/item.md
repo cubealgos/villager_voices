@@ -27,11 +27,11 @@ once implemented, config-overridable later via `VV-8`/`contracts/data-contract.m
 
 ## Acceptance criteria
 
-- [ ] `panic` fires once per panic episode (edge-detected, not once per tick while panicking),
+- [x] `panic` fires once per panic episode (edge-detected, not once per tick while panicking),
       proven by a game test.
-- [ ] `player_staring` fires under a defined, documented threshold, proven by a game test placing a
+- [x] `player_staring` fires under a defined, documented threshold, proven by a game test placing a
       test player at a known distance/angle.
-- [ ] A large-village stress check (many loaded villagers, none panicking or stared at) shows no
+- [x] A large-village stress check (many loaded villagers, none panicking or stared at) shows no
       measurable steady-state allocation from the poll (`REACTION-FAIL-004`).
 
 ## Constraints and prior findings

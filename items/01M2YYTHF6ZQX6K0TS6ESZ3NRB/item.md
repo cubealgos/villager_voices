@@ -49,3 +49,77 @@ GUI-vs-click distinction is needed" — reaction.md's own table marks it `N`, na
 follow reaction.md, the more specific source). Blocked by `VV-2` (cooldown/selection logic the
 published signal is checked against) and `VV-3` (the catalogue a selected line is drawn from).
 `zombified`/`cured` inferred-not-`javap`-confirmed hooks are `VV-5`'s concern, not this ticket's.
+
+## Findings
+
+**`breeding`'s Approach text was wrong on two independent counts, both caught against the jar
+rather than assumed — implemented as a mixin on the real hook, not the Approach's named native
+event.** (1) `Villager` does not extend `Animal` — `javap` on both classes shows they extend
+`AgeableMob` directly, as siblings, so `Animal.spawnChildFromBreeding` is never invoked for a
+villager at all, mixin or not (confirmed the hard way: mixing into it and filtering
+`self instanceof Villager` fails to *compile* — javac rejects the pattern match as provably
+impossible between two unrelated concrete classes). (2) `BabyEntitySpawnEvent` does not exist
+anywhere in Fabric API `0.161.0+26.2` — checked by extracting every one of its ~45 bundled module
+jars and grepping for the class; it is NeoForge-only, matching the research note's own Fabric-API
+column for that row ("none"). Traced the real vanilla call path by grepping the merged jar's
+classes for bytecode references to `Villager.getBreedOffspring` (the one villager-specific breeding
+method that exists): `net.minecraft.world.entity.ai.behavior.VillagerMakeLove` (a Brain behavior,
+not a goal) drives it. `BreedingMixin` now injects `Villager.getBreedOffspring(ServerLevel,
+AgeableMob)` at TAIL (full descriptor pinned, since the method has a synthetic covariant-return
+bridge sharing its name), filtered to a non-null return, publishing `BREEDING` for both parents
+when the other parent is also a `Villager` (the only case vanilla ever calls it for).
+docs/spec/domains/reaction.md §3 and platform-matrix.md's own tables already said "mixin" for this
+row — only the ticket's Approach paragraph had the wrong target/mechanism named. Recommend
+`docs/spec/domains/reaction.md` §3's breeding row gets a footnote pointing at the real method next
+time it's touched, so a future reader doesn't re-derive this from bytecode.
+
+**26.2 moved entity-type constants off `EntityType` onto a new `EntityTypes` class** (plural) —
+`net.minecraft.world.entity.EntityType` itself now carries no `public static final EntityType<...>`
+fields at all; `net.minecraft.world.entity.EntityTypes.VILLAGER`/`.IRON_GOLEM`/etc. hold them.
+Not called out in `vault/technical/minecraft/villager-events-sounds-and-emf-compat.md`'s 26.2
+package-move note (which only covers `Villager`/`Zombie`-family package moves) — worth adding there
+for whichever ticket next needs an entity-type constant on 26.2. Same pattern held for `Blocks`
+(unmoved, `Blocks.BELL` confirmed) and `Items` (`Items.EMERALD` confirmed) — only the entity-type
+constants moved.
+
+**Mixin targets confirmed by `javap -p`/`-p -c` against `minecraft-merged-deobf-26.2.jar`**, one
+per implemented mixin: `AbstractVillager.notifyTrade(MerchantOffer)` (public, TAIL — trade_completed),
+`Villager.setVillagerData(VillagerData)` (public, HEAD — level_up), `Villager.restock()` (public,
+TAIL — restock), `BellBlockEntity.onHit(Direction)` (public, TAIL — raid_bell ring target),
+`Raids.createOrExtendRaid(ServerPlayer, BlockPos)` (public, non-static, TAIL — raid_bell raid-start
+target; `Raids` itself holds no `Level` reference, so the mixin uses the `ServerPlayer` argument's
+own `.level()`), `Villager.getBreedOffspring(ServerLevel, AgeableMob)` (public, TAIL, full
+descriptor pinned against its bridge-method twin — breeding), `Villager.ageBoundaryReached()`
+(protected, a real override on `Villager` itself not just inherited from `AgeableMob`, TAIL —
+baby_grows; confirmed accessible to a game test only via `setAge` crossing the baby/adult zero
+boundary, not by calling the protected method directly).
+
+**The `Signals` helper the ticket brief asked to share with VV-5/VV-6**:
+`fabric/src/main/java/villager_voices/fabric/events/Signals.java`, package
+`villager_voices.fabric.events`. `Signals.of(LivingEntity entity, VillagerReactionEvent event)` →
+`VillagerReactionSignal` (asleep/baby read off `entity`, `nearbyPlayerIds` via
+`Signals.nearbyPlayerIds(LivingEntity)`, a 16-block search — docs/spec/domains/reaction.md §3's
+engine-default hearing-range cap, `Signals.HEARING_RANGE_BLOCKS`). Deliberately typed to
+`LivingEntity`, not `Villager`, so VV-5's `ZombieVillager` (not a `Villager` subtype) and VV-4's own
+`AbstractVillager`-typed `notifyTrade` hook both fit without a second helper.
+`TradeAndSocialEvents.publishToNearbyVillagers(Level, BlockPos, VillagerReactionEvent)` (in the same
+`events` package, not `Signals` itself) is the burst helper behind `raid_bell`/`golem_summoned` —
+worth reusing if VV-5/VV-6 ever need a "every nearby villager reacts" pattern too.
+
+**`VillagerVoicesFabric.BUS` is now a public static field**, not just a local variable inside
+`onInitialize()` — added because game tests need a reference to the exact bus every mixin and
+native listener publishes into (mixins are compiled-in hooks against one instance; a test cannot
+substitute its own). VV-5/VV-6's own game tests will want the same field; no need to add another.
+
+**Gametest classes must be listed explicitly** in
+`fabric/src/gametest/resources/fabric.mod.json`'s `entrypoints.fabric-gametest` array — a bare
+`@GameTest`-annotated class is not auto-discovered by classpath/package scanning. Cost me one
+silent-pass debugging round (`runGameTest` reported "2 tests" instead of the expected 11 until the
+new class was added to that array). VV-5/VV-6 will hit the same thing for their own gametest
+classes — the array is a shared file, so expect a small merge there too, same as
+`villager_voices.mixins.json`.
+
+**Check line**: `just check` green, including `./gradlew :fabric:runGameTest` →
+`All 11 required tests passed :)` (9 of this ticket's own + `SmokeGameTest`'s `theModLoads` + one
+test the `fabric-gametest-api-v1` module itself appears to register — not investigated further,
+harmless, passed).
