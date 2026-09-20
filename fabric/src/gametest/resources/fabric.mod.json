@@ -7,7 +7,8 @@
   "environment": "server",
   "entrypoints": {
     "fabric-gametest": [
-      "villager_voices.fabric.gametest.SmokeGameTest"
+      "villager_voices.fabric.gametest.SmokeGameTest",
+      "villager_voices.fabric.gametest.CombatAndStateGameTest"
     ]
   },
   "depends": {

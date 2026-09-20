@@ -13,5 +13,6 @@ Wires Fabric's native events and mixin targets (docs/spec/04-architecture.md's l
 The mod's server-and-common entrypoint.
 - `String MOD_ID`
 - `Logger LOGGER`
+- `VillagerEventBus BUS` — The mod's single VillagerEventBus, wired with every discovered VillagerEventSource in #onInitialize.
 - `void onInitialize()`
 
