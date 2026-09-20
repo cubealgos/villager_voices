@@ -152,6 +152,30 @@ class ClonePostChainsTest(unittest.TestCase):
         self.assertNotIn("tempo", tail)
         self.assertIn("norm", tail)
 
+    def test_round_five_chains_present(self):
+        # AUDIO-DEC-006 amendment: "warm"/"soft"/"plain-warm", none reaching for pitch/tempo either.
+        for name in ("warm", "soft", "plain-warm"):
+            self.assertIn(name, render.CLONE_POST_CHAINS)
+            chain = render.CLONE_POST_CHAINS[name]
+            self.assertNotIn("pitch", chain)
+            self.assertNotIn("tempo", chain)
+            self.assertIn("norm", chain)
+
+    def test_soft_is_darker_than_warm(self):
+        # "soft" = "warm" but a lower lowpass and added reverb (tools/voices/render.py comments).
+        warm_lowpass = int(render.CLONE_POST_CHAINS["warm"][render.CLONE_POST_CHAINS["warm"].index("lowpass") + 1])
+        soft_lowpass = int(render.CLONE_POST_CHAINS["soft"][render.CLONE_POST_CHAINS["soft"].index("lowpass") + 1])
+        self.assertLess(soft_lowpass, warm_lowpass)
+        self.assertIn("reverb", render.CLONE_POST_CHAINS["soft"])
+        self.assertNotIn("reverb", render.CLONE_POST_CHAINS["warm"])
+
+    def test_plain_warm_is_eq_only(self):
+        plain = render.CLONE_POST_CHAINS["plain-warm"]
+        self.assertNotIn("compand", plain)
+        self.assertNotIn("reverb", plain)
+        self.assertNotIn("highpass", plain)
+        self.assertIn("equalizer", plain)
+
 
 class ChainsForEngineTest(unittest.TestCase):
     def test_piper_returns_sox_chains(self):
@@ -183,7 +207,7 @@ class RenderLineDispatchTest(unittest.TestCase):
 
 
 class ReferenceSetsTest(unittest.TestCase):
-    """`reference.REFERENCE_SETS` — the three named reference sets round four samples against
+    """`reference.REFERENCE_SETS` — the named reference sets round four/five samples against
     (`AUDIO-DEC-006`)."""
 
     def test_all_contains_every_clip_in_talking_and_idle(self):
@@ -197,6 +221,79 @@ class ReferenceSetsTest(unittest.TestCase):
     def test_no_duplicate_clips_within_a_set(self):
         for name, clips in reference.REFERENCE_SETS.items():
             self.assertEqual(len(clips), len(set(clips)), f"{name}: duplicate clip name")
+
+    def test_all_warm_drops_only_the_hit_clips_from_all(self):
+        # Round five (AUDIO-DEC-006 amendment): all_warm = all minus the four hit* clips, which
+        # measured as this villager's loudest/most-clipped source material.
+        dropped = set(reference.REFERENCE_SETS["all"]) - set(reference.REFERENCE_SETS["all_warm"])
+        self.assertEqual(dropped, {"hit1", "hit2", "hit3", "hit4"})
+        self.assertTrue(set(reference.REFERENCE_SETS["all_warm"]) <= set(reference.REFERENCE_SETS["all"]))
+
+    def test_all_warm_contains_talking(self):
+        self.assertTrue(set(reference.REFERENCE_SETS["talking"]) <= set(reference.REFERENCE_SETS["all_warm"]))
+
+
+class BuildReferenceWavPostProcessingTest(unittest.TestCase):
+    """`build_reference_wav`'s round-five `lowpass_hz`/`tempo` post-processing arguments — checked
+    at the sox-command-construction level via a stubbed `subprocess.run`, not a real sox call, so
+    this runs without sox installed."""
+
+    def _fake_run_factory(self, calls: list[list[str]]):
+        class _Result:
+            returncode = 0
+            stderr = ""
+
+        def _fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            # build_reference_wav checks `out_wav.exists()` after the concatenation command; the
+            # decode step also checks `wav_path.exists()` per clip — touch every `.wav` path any
+            # call was asked to produce so both checks pass without a real sox binary.
+            if cmd and cmd[0] == "sox":
+                for tok in cmd:
+                    if tok.endswith(".wav"):
+                        Path(tok).parent.mkdir(parents=True, exist_ok=True)
+                        Path(tok).touch()
+            return _Result()
+
+        return _fake_run
+
+    def test_no_post_processing_by_default(self):
+        calls: list[list[str]] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            clip = tmp_path / "clip.ogg"
+            clip.write_bytes(b"fake")
+            original_run = reference.subprocess.run
+            reference.subprocess.run = self._fake_run_factory(calls)
+            try:
+                reference.build_reference_wav([clip], tmp_path / "out.wav", tmp_path / "scratch")
+            finally:
+                reference.subprocess.run = original_run
+        concat_cmd = calls[-1]
+        self.assertNotIn("lowpass", concat_cmd)
+        self.assertNotIn("tempo", concat_cmd)
+
+    def test_lowpass_and_tempo_appended_to_concat_command(self):
+        calls: list[list[str]] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            clip = tmp_path / "clip.ogg"
+            clip.write_bytes(b"fake")
+            original_run = reference.subprocess.run
+            reference.subprocess.run = self._fake_run_factory(calls)
+            try:
+                reference.build_reference_wav(
+                    [clip], tmp_path / "out.wav", tmp_path / "scratch", lowpass_hz=7000, tempo=0.9,
+                )
+            finally:
+                reference.subprocess.run = original_run
+        concat_cmd = calls[-1]
+        self.assertIn("lowpass", concat_cmd)
+        self.assertIn("7000", concat_cmd)
+        self.assertIn("tempo", concat_cmd)
+        self.assertIn("0.9", concat_cmd)
+        # re-normalized after the post-processing effects, not only once at the start
+        self.assertEqual(concat_cmd.count("norm"), 2)
 
 
 class AssetIndexResolutionTest(unittest.TestCase):

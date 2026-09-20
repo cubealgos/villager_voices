@@ -187,3 +187,42 @@ clips, `norm -3`.
 
 Sample round four's files, f0 table, and Kevin's own ranking-from-spectra are in
 `voices-samples-4/README.md` (scratchpad, not committed) and the VV-11 round-four report.
+
+## Round 5: warm and soft, not metallic (`AUDIO-DEC-006` amendment)
+
+Kevin on round four: "the `all` samples sound the best, but I find them a bit too harsh and robotic
+and metallic; I rather want them to sound warm and soft, but this is the best round so far." Two
+levers, both described in `docs/spec/domains/audio.md` §3's "Reference" and "Timbre target" rows:
+
+* **Reference**: `all_warm` — round four's `all` minus the four `hit*` clips (measured, not
+  guessed: `sox ... stat` "Maximum amplitude" 0.89-1.00 for `hit1`-`hit4`, vs. 0.20-0.85 for every
+  `idle`/`haggle`/`yes`/`no` clip — the loudest, most clipped source material, and the most likely
+  to teach the clone a percussive/metallic edge), with a `lowpass 7000` baked into the finished
+  reference *before* the cloning engine ever sees it (`reference.build_reference_wav`'s new
+  `lowpass_hz` parameter) — so the model conditions on the villager's formants, not the ogg
+  encoder's high-frequency crunch. A `tempo 0.9`-slowed reference variant (`tempo` parameter, same
+  function) was also tried: measured clearly **worse** in exploratory trials (2.5-5kHz/150-600kHz
+  ratio 0.58-0.59 vs. 0.03-0.06 for the lowpass-only reference, same generation settings, same seed
+  formula) — sox's `tempo` (WSOLA time-stretch) apparently reintroduces artifacts rather than
+  softening the reference, so it's dropped; only the lowpass-only `all_warm` reference is used.
+* **Generation settings**: lower `exaggeration` (round four's 0.5 down to 0.3-0.4, per Kevin's
+  ask), `cfg_weight` held at 0.5 (also per Kevin's ask), and a raised `temperature` (Chatterbox's
+  own default 0.8; round five tries 1.0 and 1.1) — `render.py`'s new `--temperature` flag
+  (`DEFAULT_TEMPERATURE`). Exploratory single-seed trials on 1-2 lines found the 2.5-5kHz/
+  150-600kHz ratio **noisy seed-to-seed at this scale** (the same nominal settings produced ratios
+  differing by an order of magnitude across different seeds/lines) — not clean enough to pick one
+  "best" setting from a handful of samples, so both settings within Kevin's requested range are
+  carried through to the full 6-line round-five render rather than narrowed to one.
+* **Post-processing** (`CLONE_POST_CHAINS`, `tools/voices/render.py`): three new candidates, all
+  aimed at less energy in the 2.5-5kHz "metallic" band relative to 150-600kHz body without starving
+  1-2kHz (intelligibility) — `warm` (highpass 80, lowpass 5500, `equalizer 250 1q +3` body lift,
+  `equalizer 3200 1.5q -4` metallic-band cut, `treble -6 8000` rolloff, a gentle `compand`,
+  normalize), `soft` (`warm` but a darker `lowpass 4500` and `reverb 8 30 20`), `plain-warm` (only
+  the two EQ moves — isolates how much of "warm" the EQ alone buys).
+
+18 files (a reduced cross-product, same pattern as round four): groups A/B compare the two
+generation settings across all 6 sample lines at chain `warm`; group C compares chains `soft`/
+`plain-warm` against `warm` (already in group A) on the 3 short lines only. Files, the ratio table
+(each file's 2.5-5kHz/150-600kHz ratio next to round four's `all` ratio for the same line), and
+Kevin's pick are in `voices-samples-5/README.md` (scratchpad, not committed) and the VV-11
+round-five report.

@@ -47,10 +47,10 @@ explicitly gates the batch on that approval.
 ```
 tools/voices/.venv-clone/bin/python tools/voices/render.py \
     --sample --engine chatterbox --reference <path-to-reference.wav> \
-    [--exaggeration 0.7] [--cfg 0.3] [--chain tail|none]
+    [--exaggeration 0.3] [--cfg 0.5] [--temperature 1.0] [--chain warm|soft|plain-warm|tail|none]
 
 tools/voices/.venv-clone/bin/python tools/voices/render.py \
-    --batch --engine chatterbox --reference <path-to-reference.wav> --chain tail
+    --batch --engine chatterbox --reference <path-to-reference.wav> --chain warm
 ```
 
 Run with the clone venv's own `python` (`tools/voices/.venv-clone/`, `setup.py --clone`) — this file
@@ -63,19 +63,28 @@ at generation time and never committed (`tools/voices/reference.py`, `COMP-REQ-0
 cd tools/voices && .venv-clone/bin/python -c "
 from pathlib import Path
 import reference
-reference.build_named_reference('talking', Path('/somewhere/outside/the/repo/reference.wav'), Path('/tmp/reference-scratch'))
+reference.build_named_reference(
+    'all_warm', Path('/somewhere/outside/the/repo/reference.wav'), Path('/tmp/reference-scratch'),
+    lowpass_hz=7000,
+)
 "
 ```
 
-`REFERENCE_SETS` in `reference.py` names three: `all` (every villager clip vanilla ships), `talking`
-(idle+haggle+yes only — the ones that read as speech), `idle` (idle only, the smallest). `--chain`
-selects a `CLONE_POST_CHAINS` entry (`tail`: a light nasal lift + top-end rolloff + normalize;
-`none`: raw clone output, format conversion only) — a much lighter touch than Piper's `SOX_CHAINS`,
-since the reference itself supplies the villager timbre this time. `--exaggeration`/`--cfg` map
-directly to Chatterbox's own `exaggeration`/`cfg_weight` generation parameters (defaults 0.5/0.5).
-Every line's torch seed is derived deterministically from its own line id (`render.derive_seed`,
-`AUDIO-REQ-006`) so a rerun reproduces byte-identical output (verified: identical MD5 across two
-runs of the same seed/text/reference on CPU).
+`REFERENCE_SETS` in `reference.py` names four: `all` (every villager clip vanilla ships), `talking`
+(idle+haggle+yes only — the ones that read as speech), `idle` (idle only, the smallest), `all_warm`
+(round five, `AUDIO-DEC-006` amendment: `all` minus the four clipped `hit*` clips — the decided
+reference set, `tools/voices/VOICES.md` "Round 5"). `build_reference_wav`/`build_named_reference`'s
+optional `lowpass_hz`/`tempo` parameters post-process the finished reference before the engine ever
+conditions on it (round five bakes in a `lowpass_hz=7000` for exactly this reason). `--chain`
+selects a `CLONE_POST_CHAINS` entry: `warm`/`soft`/`plain-warm` (round five, aimed at a less
+"metallic" timbre) or round four's `tail`/`none` — a much lighter touch than Piper's `SOX_CHAINS`
+either way, since the reference itself supplies the villager timbre this time. `--exaggeration`/
+`--cfg`/`--temperature` map directly to Chatterbox's own `exaggeration`/`cfg_weight`/`temperature`
+generation parameters (defaults 0.5/0.5/0.8 — round five's samples lower exaggeration and raise
+temperature, `docs/spec/domains/audio.md` §3 "Timbre target"). Every line's torch seed is derived
+deterministically from its own line id (`render.derive_seed`, `AUDIO-REQ-006`) so a rerun reproduces
+byte-identical output (verified: identical MD5 across two runs of the same seed/text/reference on
+CPU).
 
 ## The pipeline, in order
 

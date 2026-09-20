@@ -36,6 +36,18 @@ REFERENCE_SETS: dict[str, tuple[str, ...]] = {
     ),
     "talking": ("idle1", "idle2", "idle3", "haggle1", "haggle2", "haggle3", "yes1", "yes2", "yes3"),
     "idle": ("idle1", "idle2", "idle3"),
+    # Round five (`AUDIO-DEC-006` amendment, Kevin: "all sounds the best, but... too harsh and
+    # robotic and metallic; I rather want them to sound warm and soft"): the same broad clip
+    # coverage as "all" minus the four `hit*` clips, which measured as this villager's loudest and
+    # most clipped source material (`sox ... stat` "Maximum amplitude" 0.89-1.00, vs. 0.20-0.85 for
+    # every idle/haggle/yes/no clip) — the percussive "hit" transient is exactly the kind of source
+    # content likely to teach a cloning model a harsh, metallic edge. No other clip in "all" clips.
+    "all_warm": (
+        "idle1", "idle2", "idle3",
+        "haggle1", "haggle2", "haggle3",
+        "yes1", "yes2", "yes3",
+        "no1", "no2", "no3",
+    ),
 }
 
 SILENCE_BETWEEN_CLIPS_S = 0.150
@@ -109,10 +121,21 @@ def _write_silence_wav(out_path: Path, duration_s: float = SILENCE_BETWEEN_CLIPS
         wav.writeframes(b"\x00\x00" * n_frames)
 
 
-def build_reference_wav(clip_paths: list[Path], out_wav: Path, tmp_dir: Path) -> None:
+def build_reference_wav(
+    clip_paths: list[Path], out_wav: Path, tmp_dir: Path, *,
+    lowpass_hz: float | None = None, tempo: float | None = None,
+) -> None:
     """Concatenates `clip_paths` (any sox-readable format) with 150ms of silence between each,
     normalized to -3dB, mono 44.1kHz, written to `out_wav`. `tmp_dir` is scratch space the caller
-    owns the lifetime of — nothing is written outside it and `out_wav`."""
+    owns the lifetime of — nothing is written outside it and `out_wav`.
+
+    `lowpass_hz` (round five, `AUDIO-DEC-006` amendment) applies a gentle lowpass to the finished
+    reference before the cloning engine ever sees it, so the model conditions on the villager's own
+    formants rather than the ogg encoder's high-frequency crunch — Kevin: "too harsh and robotic and
+    metallic". `tempo` (round five) slows the reference slightly (e.g. `0.9`) on the theory that a
+    more unhurried reference delivery biases the clone toward a softer one. Either, both, or neither
+    may be given; when given, the reference is re-normalized to -3dB after applying them so the
+    final loudness convention stays the same regardless."""
     if not clip_paths:
         raise ReferenceError("no clips to build a reference from")
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -137,7 +160,14 @@ def build_reference_wav(clip_paths: list[Path], out_wav: Path, tmp_dir: Path) ->
             sequence.append(silence)
 
     out_wav.parent.mkdir(parents=True, exist_ok=True)
-    cmd = ["sox", *[str(p) for p in sequence], str(out_wav), "norm", "-3"]
+    post_effects: list[str] = []
+    if lowpass_hz is not None:
+        post_effects += ["lowpass", str(lowpass_hz)]
+    if tempo is not None:
+        post_effects += ["tempo", str(tempo)]
+    cmd = ["sox", *[str(p) for p in sequence], str(out_wav), "norm", "-3", *post_effects]
+    if post_effects:
+        cmd += ["norm", "-3"]
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0 or not out_wav.exists():
         raise ReferenceError(f"sox failed concatenating the reference: {proc.stderr.strip()}")
@@ -149,12 +179,16 @@ def build_named_reference(
     tmp_dir: Path,
     assets_root: Path = DEFAULT_ASSETS_ROOT,
     asset_index_path: Path | None = None,
+    *,
+    lowpass_hz: float | None = None,
+    tempo: float | None = None,
 ) -> None:
     """End-to-end: resolve `reference_set` (a `REFERENCE_SETS` key) against the client's own asset
-    cache and write the concatenated, normalized reference WAV to `out_wav`."""
+    cache and write the concatenated, normalized reference WAV to `out_wav`, with round five's
+    optional `lowpass_hz`/`tempo` post-processing (`build_reference_wav`)."""
     if reference_set not in REFERENCE_SETS:
         raise ReferenceError(f"unknown reference set {reference_set!r}; choose one of {sorted(REFERENCE_SETS)}")
     index_path = asset_index_path or find_default_asset_index(assets_root)
     index = load_asset_index(index_path)
     clip_paths = resolve_clips(REFERENCE_SETS[reference_set], index, assets_root)
-    build_reference_wav(clip_paths, out_wav, tmp_dir)
+    build_reference_wav(clip_paths, out_wav, tmp_dir, lowpass_hz=lowpass_hz, tempo=tempo)

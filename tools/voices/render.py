@@ -116,6 +116,7 @@ PIPER_LENGTH_SCALE = "1.0"
 # network dependency on a machine that has set up neither engine.
 DEFAULT_EXAGGERATION = 0.5
 DEFAULT_CFG_WEIGHT = 0.5
+DEFAULT_TEMPERATURE = 0.8  # Chatterbox's own default; round five (AUDIO-DEC-006 amendment) raises it
 
 # A light tail only (unlike Piper's heavier nasal/dull/pitch chain, `SOX_CHAINS` above) — the whole
 # point of cloning is that the reference *is* the villager timbre, so round four's post-processing
@@ -125,6 +126,35 @@ DEFAULT_CFG_WEIGHT = 0.5
 CLONE_POST_CHAINS = {
     "tail": ["equalizer", "1600", "1.2q", "+4", "lowpass", "6000", "norm", "-3"],
     "none": [],
+    # Round five (`AUDIO-DEC-006` amendment): round four's `all` reference read best but "too harsh
+    # and robotic and metallic... I rather want them to sound warm and soft" (Kevin). All three aim
+    # at less energy in 2.5-5kHz relative to 150-600Hz (the "metallic" band) without starving
+    # 1-2kHz (intelligibility): a low-end body lift (`equalizer 250 1q +3`), a cut right where
+    # "metallic" lives (`equalizer 3200 1.5q -4`), a top-end rolloff, and a gentle compressor
+    # (`compand`) so transients don't reintroduce harshness after the EQ. `highpass 80` clears
+    # sub-bass rumble the compander could otherwise pump on.
+    "warm": [
+        "highpass", "80", "lowpass", "5500",
+        "equalizer", "250", "1q", "+3", "equalizer", "3200", "1.5q", "-4",
+        "treble", "-6", "8000",
+        "compand", "0.02,0.2", "-60,-60,-30,-20,0,-8", "0", "-90", "0.1",
+        "norm", "-3",
+    ],
+    # Same as "warm" but a lower lowpass (darker) and a small amount of room reverb for softness.
+    "soft": [
+        "highpass", "80", "lowpass", "4500",
+        "equalizer", "250", "1q", "+3", "equalizer", "3200", "1.5q", "-4",
+        "treble", "-6", "8000",
+        "compand", "0.02,0.2", "-60,-60,-30,-20,0,-8", "0", "-90", "0.1",
+        "reverb", "8", "30", "20",
+        "norm", "-3",
+    ],
+    # The minimal move: only the low-shelf-ish body lift and the metallic-band cut, nothing else --
+    # isolates how much of "warm" the EQ alone buys before the rolloff/compand/reverb are added.
+    "plain-warm": [
+        "equalizer", "250", "1q", "+3", "equalizer", "3200", "1.5q", "-4",
+        "norm", "-3",
+    ],
 }
 
 # Candidates for the sample round (tools/voices/VOICES.md has the full licence record).
@@ -250,7 +280,7 @@ def _load_chatterbox():
 
 def _render_line_clone(
     line_id: str, text: str, out_ogg: Path, reference_wav: Path, chain: str,
-    exaggeration: float, cfg_weight: float,
+    exaggeration: float, cfg_weight: float, temperature: float,
 ) -> None:
     """Runs Chatterbox on `text`, conditioned on `reference_wav` (the vanilla-villager reference,
     `tools/voices/reference.py`), seeded deterministically from `line_id` (`derive_seed`,
@@ -265,7 +295,10 @@ def _render_line_clone(
 
     model = _load_chatterbox()
     torch.manual_seed(derive_seed(line_id))
-    wav = model.generate(text, audio_prompt_path=str(reference_wav), exaggeration=exaggeration, cfg_weight=cfg_weight)
+    wav = model.generate(
+        text, audio_prompt_path=str(reference_wav),
+        exaggeration=exaggeration, cfg_weight=cfg_weight, temperature=temperature,
+    )
     out_ogg.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         wav_path = Path(tmp) / "line.wav"
@@ -280,6 +313,7 @@ def render_line(
     engine: str, line_id: str, text: str, out_ogg: Path, chain: str, *,
     model: str | None = None, reference_wav: Path | None = None,
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
+    temperature: float = DEFAULT_TEMPERATURE,
 ) -> None:
     """Engine dispatcher: `"piper"` (the original engine, `_render_line_piper`) or `"chatterbox"`
     (round four's clone engine, `_render_line_clone`, `AUDIO-DEC-006`). `line_id` is required by both
@@ -292,7 +326,7 @@ def render_line(
     elif engine == "chatterbox":
         if reference_wav is None:
             raise PipelineError("engine 'chatterbox' requires --reference")
-        _render_line_clone(line_id, text, out_ogg, reference_wav, chain, exaggeration, cfg_weight)
+        _render_line_clone(line_id, text, out_ogg, reference_wav, chain, exaggeration, cfg_weight, temperature)
     else:
         raise PipelineError(f"unknown engine {engine!r}; choose 'piper' or 'chatterbox'")
 
@@ -314,6 +348,7 @@ def run_sample(
     out_dir: Path, engine: str, chains: tuple[str, ...], *,
     models: tuple[str, ...] = (), reference_wav: Path | None = None,
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
+    temperature: float = DEFAULT_TEMPERATURE,
 ) -> None:
     catalogue = load_catalogue()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -337,8 +372,8 @@ def run_sample(
             "reference is built from vanilla's own clips. For Kevin's timbre approval — nothing",
             "here ships.",
             "",
-            "| Reference | Exaggeration | CFG weight | Chain | Line | Subtitle | File |",
-            "|---|---|---|---|---|---|---|",
+            "| Reference | Exaggeration | CFG weight | Temperature | Chain | Line | Subtitle | File |",
+            "|---|---|---|---|---|---|---|---|",
         ]
     readme_lines = list(header)
     model_values = models if engine == "piper" else (None,)
@@ -362,10 +397,11 @@ def run_sample(
                     render_line(
                         "chatterbox", line_id, text, out_ogg, chain,
                         reference_wav=reference_wav, exaggeration=exaggeration, cfg_weight=cfg_weight,
+                        temperature=temperature,
                     )
                     readme_lines.append(
-                        f"| {reference_wav} | {exaggeration} | {cfg_weight} | {chain} | {line_id} | "
-                        f"{subtitle} | `{line_id}.{chain}.ogg` |"
+                        f"| {reference_wav} | {exaggeration} | {cfg_weight} | {temperature} | {chain} | "
+                        f"{line_id} | {subtitle} | `{line_id}.{chain}.ogg` |"
                     )
     (out_dir / "README.md").write_text("\n".join(readme_lines) + "\n", encoding="utf-8")
     print(f"sample round written to {out_dir}")
@@ -382,6 +418,7 @@ CANDIDATE_LICENCES = {
 def run_batch(
     engine: str, chain: str, *, model: str | None = None, reference_wav: Path | None = None,
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
+    temperature: float = DEFAULT_TEMPERATURE,
 ) -> None:
     catalogue = load_catalogue()
     for line_id, subtitle in sorted(catalogue.items()):
@@ -392,6 +429,7 @@ def run_batch(
         render_line(
             engine, line_id, text, out_ogg, chain,
             model=model, reference_wav=reference_wav, exaggeration=exaggeration, cfg_weight=cfg_weight,
+            temperature=temperature,
         )
 
     sounds = json.loads(SOUNDS_JSON.read_text(encoding="utf-8"))
@@ -420,6 +458,9 @@ def main() -> int:
                          help="chatterbox exaggeration (default %(default)s)")
     parser.add_argument("--cfg", type=float, default=DEFAULT_CFG_WEIGHT, dest="cfg_weight",
                          help="chatterbox cfg_weight (default %(default)s)")
+    parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE,
+                         help="chatterbox sampling temperature (default %(default)s; round five, "
+                              "AUDIO-DEC-006 amendment, raises it to soften the delivery)")
     parser.add_argument("--chain", help="sox chain name: a SOX_CHAINS key for --engine piper, "
                                          "a CLONE_POST_CHAINS key for --engine chatterbox "
                                          "(required for --batch; --sample defaults to all of the engine's chains)")
@@ -438,7 +479,7 @@ def main() -> int:
             models = (args.model,) if args.model else CANDIDATE_MODELS
             run_sample(
                 args.out, args.engine, chains, models=models, reference_wav=args.reference_wav,
-                exaggeration=args.exaggeration, cfg_weight=args.cfg_weight,
+                exaggeration=args.exaggeration, cfg_weight=args.cfg_weight, temperature=args.temperature,
             )
         else:
             if not args.chain:
@@ -449,7 +490,7 @@ def main() -> int:
                 parser.error("--batch with --engine chatterbox requires --reference")
             run_batch(
                 args.engine, args.chain, model=args.model, reference_wav=args.reference_wav,
-                exaggeration=args.exaggeration, cfg_weight=args.cfg_weight,
+                exaggeration=args.exaggeration, cfg_weight=args.cfg_weight, temperature=args.temperature,
             )
     except PipelineError as exc:
         print(f"error: {exc}", file=sys.stderr)
