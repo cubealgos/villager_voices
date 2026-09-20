@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh — no—!",
+      "sound": "villager_voices:reaction.killed.1"
+    },
+    {
+      "subtitle": "Hnnh... unfair...",
+      "sound": "villager_voices:reaction.killed.2"
+    },
+    {
+      "subtitle": "Wha— no!",
+      "sound": "villager_voices:reaction.killed.3"
+    },
+    {
+      "subtitle": "Argh!",
+      "sound": "villager_voices:reaction.killed.4"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Ha! Reinforcements.",
+      "sound": "villager_voices:reaction.golem_summoned.1"
+    },
+    {
+      "subtitle": "Mrgh, good, backup.",
+      "sound": "villager_voices:reaction.golem_summoned.2"
+    },
+    {
+      "subtitle": "Ah, our protector.",
+      "sound": "villager_voices:reaction.golem_summoned.3"
+    },
+    {
+      "subtitle": "Mmh, feel safer now.",
+      "sound": "villager_voices:reaction.golem_summoned.4"
+    }
+  ]
+}

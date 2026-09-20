@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Hmm, ah, private moment.",
+      "sound": "villager_voices:reaction.breeding.1"
+    },
+    {
+      "subtitle": "Mrgh, look away, please.",
+      "sound": "villager_voices:reaction.breeding.2"
+    },
+    {
+      "subtitle": "Ah— not now.",
+      "sound": "villager_voices:reaction.breeding.3"
+    },
+    {
+      "subtitle": "Mmh, a bit of privacy?",
+      "sound": "villager_voices:reaction.breeding.4"
+    }
+  ]
+}

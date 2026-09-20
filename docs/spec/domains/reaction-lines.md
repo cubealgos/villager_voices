@@ -16,7 +16,7 @@ dialogue was found published anywhere to compare against in any case (research �
 confirmed"). This is data, referenced by `domains/reaction.md`'s mechanism and requirements, not a
 second copy of them.
 
-## 2. JSON shape (proposed, confirm at the first ticket)
+## 2. JSON shape (confirmed at the first ticket, `VV-3`)
 
 ```json
 // data/villager_voices/reaction/trade_completed.json
@@ -74,6 +74,11 @@ without cross-referencing the lang file (`domains/reaction.md` `REACTION-DEC-001
 
 ## 6. Open questions
 
-None at the text level — the 64 lines are this sheet's own data, written now rather than deferred.
-What remains open is mechanical, not textual: the exact codec field names in §2's JSON shape,
-confirmed at the first ticket (`domains/reaction.md` §7).
+None. The 64 lines are this sheet's own data, written now rather than deferred. The codec's field
+names, the one mechanical thing left open, are confirmed by `VV-3`: a top-level JSON object with a
+`"lines"` array, each entry an object with a `"subtitle"` string and a `"sound"` string, exactly as
+§2 already showed — no wrapper or renaming needed, since that shape already matched the data as
+written. Parsing, validation (`LINES-REQ-003`'s id pattern, `REACTION-REQ-012`'s unregistered-sound
+rejection) and datapack-override behaviour live in `common`'s `villager_voices.catalogue` package
+(`Catalogue`/`CatalogueCodec`); loading that JSON off disk is `fabric`'s `CatalogueReloadListener`,
+registered through Fabric's resource loader API.

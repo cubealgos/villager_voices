@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh? Lookin' to trade?",
+      "sound": "villager_voices:reaction.offer_opened.1"
+    },
+    {
+      "subtitle": "Hmm, what've you got?",
+      "sound": "villager_voices:reaction.offer_opened.2"
+    },
+    {
+      "subtitle": "Ah, a customer.",
+      "sound": "villager_voices:reaction.offer_opened.3"
+    },
+    {
+      "subtitle": "Mmh, step right up.",
+      "sound": "villager_voices:reaction.offer_opened.4"
+    }
+  ]
+}
