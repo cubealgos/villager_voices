@@ -13,5 +13,6 @@ Wires Fabric's native events and mixin targets (docs/spec/04-architecture.md's l
 The mod's server-and-common entrypoint.
 - `String MOD_ID`
 - `Logger LOGGER`
+- `DisplayQueue DISPLAY_QUEUE` — The per-player action-bar queue (docs/spec/domains/display.md §3 "The per-player queue").
 - `void onInitialize()`
 
