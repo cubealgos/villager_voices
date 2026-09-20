@@ -14,5 +14,6 @@ The mod's server-and-common entrypoint.
 - `String MOD_ID`
 - `Logger LOGGER`
 - `VillagerEventBus BUS` — The mod's single VillagerEventBus, wired with every discovered VillagerEventSource in #onInitialize.
+- `DisplayQueue DISPLAY_QUEUE` — The per-player action-bar queue (docs/spec/domains/display.md §3 "The per-player queue").
 - `void onInitialize()`
 
