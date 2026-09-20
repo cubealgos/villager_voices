@@ -352,3 +352,72 @@ winning seed × chain `open_warm`; group C: 3 short lines' winning seed × chain
 2 delivery-length test lines plus `trade_completed.1`, winning seed × chain `open_tempo`) plus 3
 grunt-spliced previews. Ratio/pitch-lock/duration table and Kevin's pick are in
 `voices-samples-7/README.md` (scratchpad, not committed) and the VV-11 round-seven report.
+
+## Round 8: noise and hollowness, `open_warm` decided (`AUDIO-DEC-006` final amendment)
+
+Kevin on round seven: "open_warm is good, but the audio still sounds a bit noisy/hollow." Chain
+**family** decided: `open_warm`. Delivery setting unchanged: exaggeration 0.5 / cfg_weight 0.2 /
+temperature 0.8.
+
+### Noise floor, measured first
+
+Quietest-100ms-window RMS across round seven's `open_warm` samples (mono, 44.1kHz):
+
+| File | Noise floor |
+|---|---|
+| `baby_grows.3.seed2.open_warm.ogg` | -90.4 dBFS |
+| `hurt.2.seed1.open_warm.ogg` | **-54.9 dBFS** |
+| `level_up.3.seed2.open_warm.ogg` | -89.0 dBFS |
+| `level_up.4.seed2.open_warm.ogg` | -91.2 dBFS |
+| `panic.2.seed2.open_warm.ogg` | -90.7 dBFS |
+| `trade_completed.1.seed2.open_warm.ogg` | -92.8 dBFS |
+
+Five of six lines are already near-silent in their quietest window; `hurt.2` stands out with a real,
+audible floor. Its spectrum in that 100ms window: 70.8% of energy under 200Hz, peak at **60Hz** (the
+mains-hum frequency), only 14%/14% in the 4-8kHz/8-16kHz bands and negligible above — a tonal peak,
+not broadband hiss, consistent with a room/electrical tone the model picked up from the reference
+rather than a generic noise floor across every render.
+
+### Hollow: checked for reverb, found none at this resolution
+
+Scanned the current giordano reference excerpt (28s, no lowpass, round seven) for a decaying tail
+after each of its brief internal pauses (100ms-window RMS, fine-grained 0.1s scan): every pause
+found (at 3.3s, 7.8s, 9.4s, 14.2s, 15.7s, 19.7s) drops from normal speech level to near-zero RMS
+within a single 100ms window, with no intermediate/decaying values visible — no evidence of a room
+reverb tail at this resolution. **The excerpt is kept unchanged** (not re-picked to a "drier"
+stretch) — "hollow" is treated as more likely a chain/upsample artifact than a room-acoustics one in
+this specific recording, worth confirming or refuting on an actual listen.
+
+### Reference denoising and noise profile
+
+No genuine silence exists *within* the 28s cloning excerpt (it was deliberately picked to have
+none, round seven). Built a `noiseprof` instead from a clean, genuinely silent stretch elsewhere in
+the *same* source recording: 0.1s-0.8s of the same mp3 file, before the reader's first word (RMS
+0.00003-0.00005, ~-88 to -90dBFS) — same reader, same room, same session as the cloning excerpt.
+Two reference variants built from it: `ref_giordano_original.wav` (unchanged) and
+`ref_giordano_denoised.wav` (`noisered <profile> 0.1` applied to the reference itself, "so the
+clone does not learn the room") — both used across round eight's samples, not just one.
+
+### New chain: `open_warm_body`
+
+`open_warm` plus low-mid body (`equalizer 300 1q +2`) and top-end presence
+(`equalizer 5000 1q +1.5`, `treble +2 10000` restoring a little air above `open_warm`'s own
+`treble -1.5` dulling), and a steep-filter upsample (`rate -v -s` instead of `rate -v`) so nothing
+aliases on the 24kHz-to-44.1kHz jump. **Chatterbox's native output rate is 24kHz** (confirmed,
+`model.sr`), so this is purely an upsample, never downsampling below the model's own rate.
+`open_warm_body_gate` adds a soft downward-expander gate
+(`compand 0.005,0.1 -55,-70,-40,-40,0,0 -3 -60 0.02`) on top. `noisered` (0.15) is applied to the
+generated *output* by the round-eight sample driver directly (not a fixed `CLONE_POST_CHAINS`
+entry, since it needs the external, scratchpad-only profile file path) — see
+`tools/voices/render.py`'s `CLONE_POST_CHAINS` for the two new committed chains and
+`round8_driver.py`'s own comments (scratchpad) for the noisered insertion.
+
+### Samples
+
+18 files: group A is the control (`open_warm`, original reference, 6 core lines); group B is
+`open_warm_body` + output noisered + the denoised reference (6 core lines); group C is
+`open_warm_body_gate` on the original reference (3 short lines); group D combines gate + noisered +
+the denoised reference (3 short lines) — the original, non-denoised reference is kept in two of the
+four groups (A, C), not dropped outright. Noise floor (dBFS), ratio, and duration table, plus
+Kevin's pick, are in `voices-samples-8/README.md` (scratchpad, not committed) and the VV-11
+round-eight report.

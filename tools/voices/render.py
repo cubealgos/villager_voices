@@ -216,6 +216,33 @@ CLONE_POST_CHAINS = {
         "tempo", "0.92",
         "norm", "-3",
     ],
+    # Round eight (`AUDIO-DEC-006` final amendment, chain family `open_warm` decided): Kevin,
+    # "open_warm is good, but the audio still sounds a bit noisy/hollow." `open_warm_body` adds
+    # low-mid body (`equalizer 300 1q +2`) and top-end presence (`equalizer 5000 1q +1.5`, `treble
+    # +2 10000` restoring a little air above `open_warm`'s own `treble -1.5` dulling) on top of
+    # `open_warm` unchanged, and switches the upsample to `rate -v -s` (steep) so nothing aliases
+    # on the 24kHz-to-44.1kHz jump. Noise-reduction (`noisered`, needs an external profile file
+    # built from the reference's own silence) isn't a fixed chain entry here -- it's applied by the
+    # round-eight sample driver directly on the pre-encode WAV, never a hardcoded scratchpad path
+    # baked into a committed chain (`tools/voices/VOICES.md` "Round 8").
+    "open_warm_body": [
+        "rate", "-v", "-s", "44100",
+        "highpass", "70", "equalizer", "3200", "1.5q", "-2", "treble", "-1.5",
+        "bass", "+2", "equalizer", "400", "1q", "+1.5",
+        "equalizer", "300", "1q", "+2", "equalizer", "5000", "1q", "+1.5", "treble", "+2", "10000",
+        "norm", "-3",
+    ],
+    # `open_warm_body` plus a soft gate on the output -- a downward expander pulling the noise
+    # floor down without pumping the speech itself (`compand`'s attack/decay pair and knee chosen
+    # to sit well below normal speech level, -55 to -70dB in, -40dB knee).
+    "open_warm_body_gate": [
+        "rate", "-v", "-s", "44100",
+        "highpass", "70", "equalizer", "3200", "1.5q", "-2", "treble", "-1.5",
+        "bass", "+2", "equalizer", "400", "1q", "+1.5",
+        "equalizer", "300", "1q", "+2", "equalizer", "5000", "1q", "+1.5", "treble", "+2", "10000",
+        "compand", "0.005,0.1", "-55,-70,-40,-40,0,0", "-3", "-60", "0.02",
+        "norm", "-3",
+    ],
 }
 
 # Candidates for the sample round (tools/voices/VOICES.md has the full licence record).

@@ -326,6 +326,30 @@ class ClonePostChainsTest(unittest.TestCase):
         self.assertEqual(open_tempo[-4:-2], ["tempo", "0.92"])
         self.assertEqual(open_tempo[-2:], ["norm", "-3"])
 
+    def test_open_warm_body_present_and_steep_upsample(self):
+        # Round eight (AUDIO-DEC-006 final amendment, chain family decided: open_warm): Kevin,
+        # "open_warm is good, but the audio still sounds a bit noisy/hollow." open_warm_body adds
+        # low-mid body and top-end presence and switches to a steep upsample so nothing aliases.
+        body = render.CLONE_POST_CHAINS["open_warm_body"]
+        self.assertEqual(body[:4], ["rate", "-v", "-s", "44100"])
+        self.assertIn("300", body)
+        self.assertIn("5000", body)
+        self.assertEqual(body[-2:], ["norm", "-3"])
+
+    def test_open_warm_body_extends_open_warm(self):
+        # open_warm_body is open_warm's own tail (everything after the steep-upsample swap) plus
+        # the extra low-mid/presence EQ.
+        warm = render.CLONE_POST_CHAINS["open_warm"]
+        body = render.CLONE_POST_CHAINS["open_warm_body"]
+        self.assertEqual(warm[3:-2], body[4:len(warm) - 1])
+
+    def test_open_warm_body_gate_adds_a_compand_before_the_final_normalize(self):
+        body = render.CLONE_POST_CHAINS["open_warm_body"]
+        gate = render.CLONE_POST_CHAINS["open_warm_body_gate"]
+        self.assertEqual(gate[:-8], body[:-2])
+        self.assertEqual(gate[-8], "compand")
+        self.assertEqual(gate[-2:], ["norm", "-3"])
+
     def test_dry_is_resample_and_normalize_only(self):
         dry = render.CLONE_POST_CHAINS["dry"]
         self.assertEqual(dry, ["rate", "-v", "44100", "norm", "-3"])
