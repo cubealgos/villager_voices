@@ -277,3 +277,78 @@ the best-measured reference × `villager_mild` × `hurt.1` plus the two lines wi
 `villager_pitch` on `hurt.1` and `killed.3`) plus 3 grunt-spliced previews. Ratio table, duration
 sanity check for the interjection-heavy lines, and Kevin's pick are in `voices-samples-6/README.md`
 (scratchpad, not committed) and the VV-11 round-six report.
+
+## Round 7: giordano confirmed, fixing the tin can and the delivery (`AUDIO-DEC-006` final amendment)
+
+Kevin, choosing between round six's three references: "giordano is the best sample." Then, on
+giordano + `villager_mild`: "sometimes he is still hard to understand; also the delivery could be
+longer; and it still sounds like someone is speaking into a tin can." **Reference: giordano is
+final** — LibriVox, public domain, *Short Stories* by Dostoyevsky, reader **Greg Giordano**, to be
+credited by name in `NOTICE` once the batch ships.
+
+### The "tin can" finding
+
+Traced to the chain, not the recording. Every chain through round six had a lowpass well under
+10kHz: round five's reference-preparation step applied `lowpass 7000` to *every* candidate
+reference regardless of voice (carried over unexamined into round six, including giordano); on top
+of that, `villager_mild` added its own `lowpass 6000`. Round seven's reference prep drops the
+lowpass entirely (`norm -3` only) — `reference.build_reference_wav` with no `lowpass_hz` argument,
+already-existing code, no new parameter needed.
+
+**Also re-sourced at a higher bitrate.** Round six's giordano clip came from
+`shortstories_01_dostoyevsky_64kb.mp3` (64kbps, the URL LibriVox's own `listen_url` API field
+names). LibriVox/archive.org host multiple encodes per chapter (confirmed via
+`https://archive.org/metadata/dostoyevskyshortstories_1310_librivox`): a 64Kbps MP3, a 128Kbps MP3,
+and the original VBR MP3 (~128kbps average, `ffprobe`-confirmed `bit_rate=128075`, `sample_rate=
+44100`) — round seven uses the VBR original,
+`https://archive.org/download/dostoyevskyshortstories_1310_librivox/shortstories_01_dostoyevsky.mp3`.
+**Cleanest stretch**: RMS measured across the chapter's opening 90s in 10s windows (all
+0.027-0.033, no silence gaps or clipping) — settled on 45s-73s (28s), in the more consistent-RMS
+region of that scan, clear articulation, no long pause or obvious room tone.
+
+### New chains (`tools/voices/render.py` `CLONE_POST_CHAINS`)
+
+No lowpass under 10kHz anywhere, no 1200Hz boost — the opposite move from every prior round:
+
+* `open` — `rate -v 44100 highpass 70 equalizer 3200 1.5q -2 treble -1.5 norm -3`
+* `open_warm` — `open` plus `bass +2 equalizer 400 1q +1.5` (a little low-end body back)
+* `dry` — `rate -v 44100 norm -3` only, the control (not even round four-six's mild EQ)
+* `open_tempo` — `open` plus `tempo 0.92` (the delivery-length variant, below)
+
+`rate -v` is an explicit, high-quality resample from Chatterbox's native 24kHz to the shipped
+44.1kHz (matches vanilla asset convention, `docs/spec/domains/audio.md` §3 "Output format") —
+upsampling only, per the ticket's own constraint, never downsampling below the model's own rate.
+
+### Delivery length
+
+A 4-way trial (`exaggeration` 0.4/0.5 × `cfg_weight` 0.2/0.3, `temperature` 0.8 fixed) on
+`baby_grows.3`/`level_up.4` (average duration across both lines, seconds):
+
+| Setting | Avg. duration |
+|---|---|
+| exag 0.4 / cfg 0.2 | 2.28s |
+| exag 0.4 / cfg 0.3 | 2.36s |
+| **exag 0.5 / cfg 0.2** | **2.54s (longest)** |
+| exag 0.5 / cfg 0.3 | 2.12s |
+
+`exaggeration 0.5` / `cfg_weight 0.2` / `temperature 0.8` wins and is round seven's setting for
+every sample below — both round six's durations (`baby_grows.3` 1.36s, `level_up.4` 2.04s on
+`pirie`/`villager_mild`) are shorter than every one of these four trial settings on giordano.
+`open_tempo` (a further `tempo 0.92` post-stretch) tests going longer still.
+
+### Intelligibility: two seeds per line
+
+Each of the 6 sample lines rendered at two candidate seeds (`render.derive_seed(line_id)`, the real
+batch's own seed, and an exploration-only alternate); kept whichever has the higher fraction of
+pitch-locked voiced frames (round three's own autocorrelation method), ties broken by the lower
+"metallic" ratio. Exploration only, not wired into the pipeline — `render.py`'s committed
+`derive_seed` is unchanged (`AUDIO-REQ-006`); which lines actually needed the second seed is
+recorded in `voices-samples-7/README.md`.
+
+### Samples
+
+24 files (group A: 6 core lines × 2 seeds × chain `open`, seed selection; group B: each line's
+winning seed × chain `open_warm`; group C: 3 short lines' winning seed × chain `dry`; group D: the
+2 delivery-length test lines plus `trade_completed.1`, winning seed × chain `open_tempo`) plus 3
+grunt-spliced previews. Ratio/pitch-lock/duration table and Kevin's pick are in
+`voices-samples-7/README.md` (scratchpad, not committed) and the VV-11 round-seven report.

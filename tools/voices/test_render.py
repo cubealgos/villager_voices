@@ -299,6 +299,43 @@ class ClonePostChainsTest(unittest.TestCase):
         self.assertEqual(mild[:4], ["equalizer", "1200", "1q", "+3"])
         self.assertEqual(mild[4:8], ["equalizer", "2600", "1.5q", "-3"])
 
+    def test_round_seven_chains_present(self):
+        # AUDIO-DEC-006 final amendment: "open"/"open_warm"/"dry"/"open_tempo" -- Kevin: "it still
+        # sounds like someone is speaking into a tin can." No lowpass under 10kHz anywhere, and no
+        # 1200Hz boost.
+        for name in ("open", "open_warm", "dry", "open_tempo"):
+            self.assertIn(name, render.CLONE_POST_CHAINS)
+            chain = render.CLONE_POST_CHAINS[name]
+            self.assertIn("norm", chain)
+            self.assertNotIn("1200", chain)
+            if "lowpass" in chain:
+                cutoff = int(chain[chain.index("lowpass") + 1])
+                self.assertGreaterEqual(cutoff, 10000)
+
+    def test_round_seven_chains_upsample_explicitly(self):
+        # Chatterbox's native rate is 24kHz; round seven upsamples explicitly and at high quality
+        # (`rate -v`) rather than relying on the output format flag's own resample.
+        for name in ("open", "open_warm", "dry", "open_tempo"):
+            chain = render.CLONE_POST_CHAINS[name]
+            self.assertEqual(chain[:3], ["rate", "-v", "44100"])
+
+    def test_open_tempo_is_open_plus_a_tempo_stretch(self):
+        open_chain = render.CLONE_POST_CHAINS["open"]
+        open_tempo = render.CLONE_POST_CHAINS["open_tempo"]
+        self.assertEqual(open_tempo[:-4], open_chain[:-2])
+        self.assertEqual(open_tempo[-4:-2], ["tempo", "0.92"])
+        self.assertEqual(open_tempo[-2:], ["norm", "-3"])
+
+    def test_dry_is_resample_and_normalize_only(self):
+        dry = render.CLONE_POST_CHAINS["dry"]
+        self.assertEqual(dry, ["rate", "-v", "44100", "norm", "-3"])
+
+    def test_open_warm_is_open_plus_low_end(self):
+        open_chain = render.CLONE_POST_CHAINS["open"]
+        open_warm = render.CLONE_POST_CHAINS["open_warm"]
+        self.assertEqual(open_warm[:len(open_chain) - 2], open_chain[:-2])
+        self.assertIn("bass", open_warm)
+
 
 class ChainsForEngineTest(unittest.TestCase):
     def test_piper_returns_sox_chains(self):

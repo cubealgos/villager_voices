@@ -178,6 +178,44 @@ CLONE_POST_CHAINS = {
         "lowpass", "6000", "bass", "+2",
         "norm", "-3",
     ],
+    # Round seven (`AUDIO-DEC-006` final amendment): Kevin on giordano/villager_mild, "sometimes
+    # he is still hard to understand... it still sounds like someone is speaking into a tin can" --
+    # every chain through round six had a lowpass well under 10kHz (villager_mild's own 6000Hz, on
+    # top of a reference already lowpassed at 7000Hz in round five; round six's giordano reference
+    # itself was never lowpassed, so the "tin can" was coming from the chain, not the source).
+    # Round seven's chains explicitly avoid any lowpass under 10kHz and drop the 1200Hz nasal boost
+    # entirely -- the opposite move from every prior round's chain design. `rate -v` is an explicit
+    # high-quality upsample from Chatterbox's native 24kHz to the shipped 44.1kHz (matches vanilla
+    # asset convention, audio.md §3 "Output format"), rather than relying on the output format
+    # flag's own (lower-quality-by-default) resample.
+    "open": [
+        "rate", "-v", "44100",
+        "highpass", "70", "equalizer", "3200", "1.5q", "-2", "treble", "-1.5",
+        "norm", "-3",
+    ],
+    # `open` plus a little low-end body back -- the counterweight to the top-end/nasal moves.
+    "open_warm": [
+        "rate", "-v", "44100",
+        "highpass", "70", "equalizer", "3200", "1.5q", "-2", "treble", "-1.5",
+        "bass", "+2", "equalizer", "400", "1q", "+1.5",
+        "norm", "-3",
+    ],
+    # The true control: a high-quality resample and a loudness normalize, nothing else -- not even
+    # round four/five/six's mild EQ.
+    "dry": [
+        "rate", "-v", "44100",
+        "norm", "-3",
+    ],
+    # `open` plus a post `tempo 0.92` stretch -- round seven's other finding, "the delivery could
+    # be longer": alongside lower `cfg_weight` at generation time (`DEFAULT_CFG_WEIGHT` stays the
+    # CLI default; round seven's own render calls pass 0.2 explicitly), a light tempo pull after
+    # the fact makes the delivery read as less rushed without another generation pass.
+    "open_tempo": [
+        "rate", "-v", "44100",
+        "highpass", "70", "equalizer", "3200", "1.5q", "-2", "treble", "-1.5",
+        "tempo", "0.92",
+        "norm", "-3",
+    ],
 }
 
 # Candidates for the sample round (tools/voices/VOICES.md has the full licence record).
