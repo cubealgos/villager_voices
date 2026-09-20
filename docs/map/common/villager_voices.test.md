@@ -5,6 +5,44 @@
 Every type with its summary and every non-private constructor, method and constant. The
 signature is the contract; read the source only when the summary is not enough.
 
+### `class LineSelectorTest` — `common/src/test/java/villager_voices/LineSelectorTest.java`
+- `void emptyEligibleYieldsNoSelection()`
+- `void noLastPlayedPicksAmongTheFullEligibleList()`
+- `void excludesTheLineThatPlayedLast()`
+- `void excludesTheLineThatPlayedLastRegardlessOfItsPosition()`
+- `void singleLineCatalogueRepeatsWhenExcludingItLeavesNothing()`
+- `void lastPlayedNotPresentInEligibleIsHarmless()`
+
+### `class ReactionRulesTest` — `common/src/test/java/villager_voices/ReactionRulesTest.java`
+- `void perEventCooldownSuppressesWithinWindow()`
+- `void perEventCooldownAllowsExactlyAtWindowBoundary()`
+- `void perEventCooldownIsIndependentPerEvent()`
+- `void globalCooldownSuppressesAnyEventWithinWindow()`
+- `void globalCooldownAllowsExactlyAtWindowBoundary()`
+- `void globalCooldownIsIndependentPerVillager()`
+- `void playerRateLimitSuppressesSecondLineWithinWindow()`
+- `void playerRateLimitAllowsExactlyAtWindowBoundary()`
+- `void playerRateLimitIsIndependentOfVillagerCount()`
+- `void playerRateLimitIsIndependentPerPlayer()`
+- `void asleepSuppressesEveryEventButSleep()`
+- `void babySuppressesEveryEventButBabyGrows()`
+- `void awakeAdultIsNeverSilenced()`
+- `void sleepingBabyStillSilencesSleepEvent()`
+- `void permitsReturnsFalseWhenSilencedRegardlessOfCooldownState()`
+- `void lastPlayedIsEmptyBeforeAnyRecord()`
+- `void recordUpdatesLastPlayedPerVillagerAndEvent()`
+- `void suppressedDetectionDoesNotStartACooldownWindow()`
+- `void defaultsMatchTheSpecsProposedTable()`
+
+### `class VillagerEventBusReactionTest` — `common/src/test/java/villager_voices/VillagerEventBusReactionTest.java`
+Exercises VillagerEventBus's reaction pipeline (VV-2) end to end with a fake LineCatalogue, a fake LineSink, a fake clock, and a fixed roll -- the shape docs/spec/operations/testing.md calls for, without any Minecraft dependency.
+- `void publishesSelectedLineToSink()`
+- `void secondPublishWithinCooldownProducesNoLine()`
+- `void sleepingVillagerProducesNoLineForANonSleepEvent()`
+- `void rateLimitedPlayerIsExcludedFromRecipientsButOthersStillReceiveTheLine()`
+- `void noRepeatAcrossTwoWellSeparatedPublishes()`
+- `void unconfiguredBusStillFansOutToSubscribersOnly()`
+
 ### `class VillagerEventBusTest` — `common/src/test/java/villager_voices/VillagerEventBusTest.java`
 - `void publishReachesEverySubscriber()`
 - `void discoverSourcesReturnsEmptyListWithNoneRegistered()`

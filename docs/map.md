@@ -14,15 +14,19 @@ signature page before calling into a package you did not write.
 
 | package | project | types | what |
 |---|---|---|---|
-| `villager_voices` | common | VillagerEventBus, VillagerEventSource, VillagerReactionEvent, VillagerReactionSignal | Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001). |
+| `villager_voices` | common | LineCatalogue, LineRef, LineSelector, LineSink, ReactionRules, VillagerEventBus, VillagerEventSource, VillagerReactionEvent, VillagerReactionSignal | Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001). |
 | `villager_voices.catalogue` | common | Catalogue, CatalogueCodec, CatalogueLoadException, Line, MiniJson | The data-driven line catalogue (docs/spec/domains/reaction-lines.md, `REACTION-DEC-001`): a pure Java codec for data/villager_voices/reaction/.json, keyed by event id string (e.g. |
-| `villager_voices` | common (test) | VillagerEventBusTest |  |
+| `villager_voices.display` | common | DisplayFormat, DisplayLine, DisplayQueue | The action-bar display channel: the per-player villager_voices.display.DisplayQueue, its villager_voices.display.DisplayLine input, and the pure villager_voices.display.DisplayFormat (docs/spec/domains/display.md). |
+| `villager_voices` | common (test) | LineSelectorTest, ReactionRulesTest, VillagerEventBusReactionTest, VillagerEventBusTest |  |
 | `villager_voices.catalogue` | common (test) | CatalogueCodecTest, CatalogueTest, MiniJsonTest |  |
+| `villager_voices.display` | common (test) | DisplayFormatTest, DisplayQueueTest |  |
 | `villager_voices.fabric` | fabric | FabricVillagerEventSource, VillagerVoicesFabric |  |
 | `villager_voices.fabric.catalogue` | fabric | CatalogueReloadListener |  |
 | `villager_voices.fabric.client` | fabric | VillagerVoicesFabricClient |  |
+| `villager_voices.fabric.display` | fabric | ActionBarDisplay | The Fabric-side push for common's villager_voices.display package (docs/spec/domains/display.md): villager_voices.fabric.display.ActionBarDisplay drains the per-player DisplayQueue every server tick and calls ServerPlayer#sendOverlayMessage. |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
 | `villager_voices.fabric.catalogue` | fabric (test) | DefaultCatalogueResourcesTest |  |
+| `villager_voices.fabric.display` | fabric (gametest) | DisplayQueueGameTest |  |
 | `villager_voices.fabric.gametest` | fabric (gametest) | CatalogueGameTest, SmokeGameTest |  |
 
 | build script | what |

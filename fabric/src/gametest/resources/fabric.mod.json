@@ -8,7 +8,8 @@
   "entrypoints": {
     "fabric-gametest": [
       "villager_voices.fabric.gametest.SmokeGameTest",
-      "villager_voices.fabric.gametest.CatalogueGameTest"
+      "villager_voices.fabric.gametest.CatalogueGameTest",
+      "villager_voices.fabric.display.DisplayQueueGameTest"
     ]
   },
   "depends": {
