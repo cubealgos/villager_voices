@@ -33,15 +33,15 @@ checkout at a tag (`REL-REQ-001`).
 
 ## Acceptance criteria
 
-- [ ] The Modrinth icon exists at `docs/modrinth/icon.png` (or wherever `just icon` places it),
+- [x] The Modrinth icon exists at `docs/modrinth/icon.png` (or wherever `just icon` places it),
       matching this mod's own identity, distinct from the Create-family navy badge.
-- [ ] `docs/modrinth/body.md` carries the real listing body, reviewed against `COMP-REQ-002`/
+- [x] `docs/modrinth/body.md` carries the real listing body, reviewed against `COMP-REQ-002`/
       `DEC-009-positioning.md` for no reference-product mention anywhere.
-- [ ] The slug is confirmed with Kevin (either `villager-voices-mod` or a chosen alternative) before
+- [x] The slug is confirmed with Kevin (either `villager-voices-mod` or a chosen alternative) before
       the listing is published.
-- [ ] `just release` produces `dist/` with the jar, its SHA-256, and release notes naming the
+- [x] `just release` produces `dist/` with the jar, its SHA-256, and release notes naming the
       Minecraft version, loader, loader version, and default settings (`REL-REQ-001`–`003`).
-- [ ] If `VV-11` (real audio) has landed, `NOTICE` and the listing disclose AI-generated audio
+- [x] If `VV-11` (real audio) has landed, `NOTICE` and the listing disclose AI-generated audio
       (`REL-REQ-004`); if not, this criterion does not apply yet and is re-checked at the next
       release that does include real audio.
 
