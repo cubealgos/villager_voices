@@ -75,3 +75,58 @@ another axis to an already-large sample round).
 
 Models are cached at `tools/voices/.cache/models/<name>/<name>.onnx(.json)`, gitignored; fetch with
 `python3 tools/voices/setup.py`.
+
+## Round 3: matching vanilla's own pitch (`AUDIO-DEC-005`)
+
+Kevin, on round 2: "I like norman but would want him a little less deep; can you try the pitch of
+the normal villager sound." Measured, rather than guessed — the client's own vanilla assets from
+`~/.gradle/caches/fabric-loom/assets/` (an ad-hoc measurement script, not part of this repo or the
+pipeline: `AUDIO-REQ-005` bars the pipeline itself from ever touching Mojang assets, and no vanilla
+audio byte is copied into the repo or the scratchpad deliverable — measurement only, then
+discarded).
+
+**Method**: decode each clip to mono 22050Hz PCM (`sox`), split into 40ms frames (50% overlap),
+keep frames whose RMS clears 1% of the clip's own peak RMS ("voiced"), estimate each voiced frame's
+f0 by normalized autocorrelation restricted to 70–400Hz, accept a frame only if its autocorrelation
+peak clears 0.3, and take the median across every accepted frame pooled from all clips in a group.
+
+**Vanilla reference** — `minecraft/sounds/mob/villager/{idle,haggle}{1,2,3}.ogg` (`haggle` is
+vanilla's own trade-interaction sound; there is no separate "trade" file), resolved from
+`indexes/26.2-32.json`, 6 clips, 99 accepted voiced frames pooled:
+
+| Clip | Median f0 |
+|---|---|
+| idle1 | 117.6 Hz |
+| idle2 | 101.1 Hz |
+| idle3 | 137.2 Hz |
+| haggle1 | 174.8 Hz |
+| haggle2 | 133.3 Hz |
+| haggle3 | 94.4 Hz |
+| **pooled (idle+haggle)** | **118.5 Hz** — the vanilla reference used below |
+
+**`en_US-norman-medium`'s own natural pitch** (Piper output, `noise_scale=0 noise_w=0`, *no* sox
+chain at all) on the three round-3 lines, grunt removed ("Traded! Nice.", "That hurt!", "Danger!"):
+86.1 / 95.0 / 86.5 Hz — already **below** vanilla's 118.5 Hz median. Sweeping `sox pitch {0, -100,
+-200, -300}` on the same dry output only moves it further away (86–95 Hz at `0`, down to 77–82 Hz
+at `-300`) — pitching *down* from here, which is what round 2's `-300`/`-500` did, moves away from
+vanilla, not toward it. **Landing exactly on vanilla's median would mean pitching *up* roughly
++490 cents from Norman's natural voice** — far outside the ±100-cent window explored below, and a
+reversal of `AUDIO-DEC-004`'s "never up," so not attempted; the three chains below explore a small,
+bounded step in that direction instead, for Kevin's listen, not a claim that any of them matches
+vanilla exactly.
+
+Round 3's three named `SOX_CHAINS` (Norman only, full nasal/dull/loudness tail, measured on the
+actual rendered output):
+
+| Chain | `pitch` (cents) | Measured median f0 (3-line avg) | Vanilla reference |
+|---|---|---|---|
+| `villager_below` | -100 | 84.7 Hz | 118.5 Hz |
+| `villager_match` | 0 (Norman's natural pitch — the closest of the four originally-swept values to vanilla, not an exact match) | 90.0 Hz | 118.5 Hz |
+| `villager_above` | +100 | 92.0 Hz | 118.5 Hz |
+
+Per-line detail in `voices-samples-3/README.md` (scratchpad, not committed).
+
+Round 3 also drops the written grunt from the three sample lines' TTS input ("Mrrgh — traded!
+Nice." → "Traded! Nice.") since the game now plays the vanilla grunt itself
+(`AUDIO-REQ-007`, VV-18) — `SAMPLE_TEXT_OVERRIDES` in `render.py`, sample-round-only for now (the
+general 64-line grunt-stripping rule is still undecided).

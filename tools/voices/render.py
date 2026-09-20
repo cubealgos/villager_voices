@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The Piper voice pipeline (`docs/spec/domains/audio.md` §3, `AUDIO-DEC-004`).
+"""The Piper voice pipeline (`docs/spec/domains/audio.md` §3, `AUDIO-DEC-004`/`AUDIO-DEC-005`).
 
 Reads the 64-line reaction catalogue (the 16 JSON files under
 `fabric/src/main/resources/data/villager_voices/reaction/`), feeds each line's own subtitle to the
@@ -10,7 +10,7 @@ mono OGG Vorbis output.
 Two modes:
 
 * `--sample`: a fixed 3-line slice rendered once per candidate voice model **and** once per pitch
-  `--chain` (`deep`/`deeper`), for Kevin's timbre approval (`AUDIO-FAIL-003`) — never touches the
+  `--chain` (`SOX_CHAINS`), for Kevin's timbre approval (`AUDIO-FAIL-003`) — never touches the
   shipped assets.
 * `--batch`: all 64 lines against one approved `--model` and `--chain`, written to their shipped
   paths (`fabric/src/main/resources/assets/villager_voices/sounds/reaction/<event>_<n>.ogg`,
@@ -44,11 +44,19 @@ PIPER_BIN = PIPER_DIR / "piper"
 ESPEAK_DATA = PIPER_DIR / "espeak-ng-data"
 MODELS_DIR = CACHE_DIR / "models"
 
-# The fixed sox chains (audio.md §3 "Pitch/tempo", `AUDIO-DEC-004`): pitched down for a deep
-# register, a nasal EQ boost, dulled highs, pulled-back lows so "dull" doesn't read as "boomy", and
-# a final loudness normalize — applied identically in --sample and --batch so the approved sample
-# predicts the batch. Round 1's chain (`pitch 500 tempo 0.92`, pitched *up*) was rejected outright
-# as unintelligible; two depths are sampled in round 2, "deep" and "deeper".
+# The fixed sox chains (audio.md §3 "Pitch/tempo", `AUDIO-DEC-004`/`AUDIO-DEC-005`): a nasal EQ
+# boost, dulled highs, pulled-back lows so "dull" doesn't read as "boomy", and a final loudness
+# normalize, on top of a per-chain pitch shift — applied identically in --sample and --batch so the
+# approved sample predicts the batch. Round 1's chain (`pitch 500 tempo 0.92`, pitched *up*) was
+# rejected outright as unintelligible; round 2 sampled "deep"/"deeper" (round 1's holdovers, kept
+# here for history and regenerability, `AUDIO-REQ-006`); Kevin's round-2 verdict on `en_US-norman-
+# medium`, the one model that survived: "a little less deep... try the pitch of the normal villager
+# sound." Round 3 measures vanilla's own median f0 (`tools/voices/VOICES.md`) and finds it *above*
+# Norman's natural (unshifted) pitch, not below it — so landing on it would mean pitching **up**,
+# reversing `AUDIO-DEC-004`'s "never up" by design. `villager_match` (the measured match, `pitch 0`
+# — i.e. no shift) and `villager_above` (`pitch 100`, deliberately testing that reversal) are
+# offered alongside `villager_below` (`pitch -100`, still on the "less deep" side Kevin asked for)
+# for his listen — none of the three is a foregone conclusion.
 SOX_FORMAT_ARGS = ["-r", "44100", "-c", "1", "-C", "5"]  # 44.1kHz mono, ~Vorbis quality 5
 _NASAL_DULL_TAIL = [
     "equalizer", "1600", "1.2q", "+9",  # nasal band boost
@@ -61,6 +69,9 @@ _NASAL_DULL_TAIL = [
 SOX_CHAINS = {
     "deep": ["pitch", "-300", *_NASAL_DULL_TAIL],
     "deeper": ["pitch", "-500", *_NASAL_DULL_TAIL],
+    "villager_below": ["pitch", "-100", *_NASAL_DULL_TAIL],
+    "villager_match": ["pitch", "0", *_NASAL_DULL_TAIL],
+    "villager_above": ["pitch", "100", *_NASAL_DULL_TAIL],
 }
 
 # Piper synthesis parameters, fixed uniformly across every line (see "Determinism" in
@@ -79,6 +90,17 @@ CANDIDATE_MODELS = (
 
 # A fixed 3-line slice spanning the catalogue's tonal range, for the sample round.
 SAMPLE_LINE_IDS = ("trade_completed.1", "hurt.2", "panic.2")
+
+# Round 3 only (`AUDIO-DEC-005`): a manual override of these 3 sample lines' TTS input, the written
+# grunt removed ("Mrrgh — traded! Nice." -> "Traded! Nice.") since the grunt is now played by the
+# game itself (`AUDIO-REQ-007`, VV-18). This is *not* yet a general rule for all 64 lines — how to
+# mechanically strip a grunt from an arbitrary subtitle is undecided — so `derive_input_text` stays
+# a plain no-op and this override applies only to `run_sample`'s fixed slice.
+SAMPLE_TEXT_OVERRIDES = {
+    "trade_completed.1": "Traded! Nice.",
+    "hurt.2": "That hurt!",
+    "panic.2": "Danger!",
+}
 
 
 # --- Catalogue -----------------------------------------------------------------------------------
@@ -160,29 +182,28 @@ def run_sample(out_dir: Path, models: tuple[str, ...], chains: tuple[str, ...]) 
     catalogue = load_catalogue()
     out_dir.mkdir(parents=True, exist_ok=True)
     readme_lines = [
-        "# Piper voice-model sample round 2 (VV-11)",
+        "# Piper voice-model sample round (VV-11)",
         "",
-        "Three lines x each candidate voice model x each pitch chain (`deep` = `pitch -300`,",
-        "`deeper` = `pitch -500`, both then the shared nasal/dull/loudness tail — see",
-        "`tools/voices/README.md`). Round 1's samples were rejected outright (Kevin, 2026-09-20:",
-        "\"they're all shit, I can't understand a single thing\"); round 2 feeds Piper the subtitle's",
-        "own plain English instead of nonsense syllables, and pitches down instead of up",
-        "(`AUDIO-DEC-004`). For Kevin's timbre approval — nothing here is shipped.",
+        "Three lines x each candidate voice model x each `SOX_CHAINS` entry passed — see",
+        "`tools/voices/render.py` for what each named chain does and `tools/voices/README.md` for",
+        "why. \"Spoken text\" is what Piper actually receives; it differs from \"Subtitle\" only where",
+        "`SAMPLE_TEXT_OVERRIDES` applies (round 3, `AUDIO-DEC-005`: the written grunt removed, since",
+        "the game plays the vanilla grunt itself). For Kevin's timbre approval — nothing here ships.",
         "",
-        "| Model | Licence | Chain | Line | Subtitle | File |",
-        "|---|---|---|---|---|---|",
+        "| Model | Licence | Chain | Line | Subtitle | Spoken text | File |",
+        "|---|---|---|---|---|---|---|",
     ]
     for model in models:
         for chain in chains:
             for line_id in SAMPLE_LINE_IDS:
                 subtitle = catalogue[line_id]
-                text = derive_input_text(line_id, subtitle)
+                text = SAMPLE_TEXT_OVERRIDES.get(line_id) or derive_input_text(line_id, subtitle)
                 out_ogg = out_dir / model / f"{line_id}.{chain}.ogg"
                 print(f"rendering {model}/{line_id}.{chain}.ogg  ({text!r})")
                 render_line(model, text, out_ogg, chain)
                 licence = CANDIDATE_LICENCES.get(model, "see tools/voices/VOICES.md")
                 readme_lines.append(
-                    f"| {model} | {licence} | {chain} | {line_id} | {subtitle} | `{model}/{line_id}.{chain}.ogg` |"
+                    f"| {model} | {licence} | {chain} | {line_id} | {subtitle} | {text} | `{model}/{line_id}.{chain}.ogg` |"
                 )
     (out_dir / "README.md").write_text("\n".join(readme_lines) + "\n", encoding="utf-8")
     print(f"sample round written to {out_dir}")

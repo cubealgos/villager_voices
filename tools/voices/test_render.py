@@ -35,17 +35,49 @@ class DeriveInputTextTest(unittest.TestCase):
 
 
 class SoxChainsTest(unittest.TestCase):
-    """Round 1's `pitch 500` (up) was rejected outright (`AUDIO-DEC-004`: "never up"); pin every
-    configured chain to a negative pitch so that mistake can't silently come back."""
+    """Round 1's `pitch 500` (way up, paired with scrambled input text) was rejected outright
+    (`AUDIO-DEC-004`). Round 3 deliberately tests a small pitch-up again (`villager_above`,
+    `AUDIO-DEC-005`) — vanilla's own measured median f0 sits *above* `en_US-norman-medium`'s
+    natural pitch, not below it, so landing on it means going up — but only a modest +100 cents,
+    only as one of three explicitly-named `villager_*` sample chains for Kevin's listen, never as
+    a silent change to the pipeline's default direction."""
 
-    def test_every_chain_pitches_down_never_up(self):
+    def test_every_chain_starts_with_a_pitch_effect(self):
         for name, args in render.SOX_CHAINS.items():
             self.assertEqual(args[0], "pitch", f"{name}: expected 'pitch' first, got {args!r}")
-            self.assertTrue(args[1].startswith("-"), f"{name}: pitch {args[1]!r} is not negative")
+
+    def test_pitch_is_within_the_explored_range(self):
+        for name, args in render.SOX_CHAINS.items():
+            cents = int(args[1])
+            self.assertTrue(-500 <= cents <= 100, f"{name}: pitch {cents} outside the explored range")
+
+    def test_only_named_villager_chains_pitch_up_or_flat(self):
+        for name, args in render.SOX_CHAINS.items():
+            cents = int(args[1])
+            if cents >= 0:
+                self.assertTrue(name.startswith("villager_"), f"{name}: pitch {cents} is up/flat but not a named villager_* chain")
+
+    def test_every_chain_shares_the_same_tail_after_pitch(self):
+        tails = {tuple(args[2:]) for args in render.SOX_CHAINS.values()}
+        self.assertEqual(len(tails), 1, "every chain should share the same nasal/dull/loudness tail")
 
     def test_deep_and_deeper_share_everything_but_the_pitch_depth(self):
         self.assertEqual(render.SOX_CHAINS["deep"][2:], render.SOX_CHAINS["deeper"][2:])
         self.assertNotEqual(render.SOX_CHAINS["deep"][1], render.SOX_CHAINS["deeper"][1])
+
+
+class SampleTextOverridesTest(unittest.TestCase):
+    """Round 3's `AUDIO-DEC-005` overrides — the written grunt removed for the sample slice only,
+    since the game now plays the vanilla grunt itself (`AUDIO-REQ-007`)."""
+
+    def test_every_override_key_is_a_sample_line(self):
+        self.assertTrue(set(render.SAMPLE_TEXT_OVERRIDES) <= set(render.SAMPLE_LINE_IDS))
+
+    def test_overrides_have_no_leading_villager_grunt(self):
+        for line_id, text in render.SAMPLE_TEXT_OVERRIDES.items():
+            subtitle = render.load_catalogue()[line_id]
+            self.assertNotEqual(text, subtitle, f"{line_id}: override should differ from the subtitle")
+            self.assertTrue(text[0].isupper(), f"{line_id}: {text!r} should read as a clean sentence")
 
 
 class LoadCatalogueTest(unittest.TestCase):
