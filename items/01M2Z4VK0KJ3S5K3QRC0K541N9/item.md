@@ -18,7 +18,7 @@ created_at: 2026-09-20T10:12:44Z
 
 ## Acceptance criteria
 
-- [ ] <fill this in before committing>
+- [x] <fill this in before committing>
 
 ## Constraints and prior findings
 
@@ -34,10 +34,10 @@ Kevin, 2026-09-20, on VV-11's round-two samples: "stuff like 'hrngg' should be r
 
 ## Acceptance criteria
 
-- [ ] Optional `grunt` per line parsed, validated, carried to the sink; every shipped catalogue line has its written grunt removed from `subtitle` and a fitting vanilla event as `grunt`.
-- [ ] Grunt then line as one utterance, the line delayed by the grunt's measured length; lines without a grunt unchanged; EMF talking state spans both.
-- [ ] Game test for the sequencing; `just check` green; spec copy (`docs/spec/`) synced from the vault.
-- [ ] Merged through a Forgejo pull request into `development`.
+- [x] Optional `grunt` per line parsed, validated, carried to the sink; every shipped catalogue line has its written grunt removed from `subtitle` and a fitting vanilla event as `grunt`.
+- [x] Grunt then line as one utterance, the line delayed by the grunt's measured length; lines without a grunt unchanged; EMF talking state spans both.
+- [x] Game test for the sequencing; `just check` green; spec copy (`docs/spec/`) synced from the vault.
+- [x] Merged through a Forgejo pull request into `development`.
 
 ## Constraints and prior findings
 
