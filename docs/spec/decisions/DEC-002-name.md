@@ -40,3 +40,5 @@ this and stay as ruled.
 No domain registered, no six-TLD availability check run: there is no standalone web presence
 planned. The icon is explicitly a proposal, not decided (`rulings-2026-09-20.md`'s own "not yet
 decided" note) — flagged in `README.md` "Open questions gathered", not designed in this pass.
+
+**Ruled 2026-09-20 (Kevin):** the Modrinth slug is `wait-they-talk-now` (free, matches the title); `villager-voices-mod` is not used.
