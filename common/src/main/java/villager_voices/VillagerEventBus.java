@@ -68,20 +68,48 @@ public final class VillagerEventBus {
     }
 
     public void publish(VillagerReactionSignal signal) {
-        for (Consumer<VillagerReactionSignal> subscriber : subscribers) {
-            subscriber.accept(signal);
-        }
-        if (catalogue != null && sink != null && clock != null && roll != null) {
-            react(signal);
+        dispatch(signal);
+        if (isConfigured()) {
+            react(signal, false);
         }
     }
 
-    private void react(VillagerReactionSignal signal) {
+    /**
+     * Publishes {@code signal} exactly as {@link #publish} does, except that {@link
+     * ReactionRules}'s per-event and per-villager-global cooldown windows (REACTION-REQ-006,
+     * REACTION-REQ-007) are skipped entirely — a development-tool escape hatch ({@code VV-13})
+     * for forcing an otherwise-throttled event during testing. The sleep/baby silence rule
+     * (REACTION-REQ-009, REACTION-REQ-010) is <b>not</b> bypassed: a silenced event still
+     * produces no line here, same as {@link #publish}. Selection, no-immediate-repeat exclusion,
+     * cooldown recording, and the per-player rate limit all still run for real — this is not a
+     * separate code path from {@link #publish}, only a narrower permission check.
+     */
+    public void publishBypassingRules(VillagerReactionSignal signal) {
+        dispatch(signal);
+        if (isConfigured()) {
+            react(signal, true);
+        }
+    }
+
+    private void dispatch(VillagerReactionSignal signal) {
+        for (Consumer<VillagerReactionSignal> subscriber : subscribers) {
+            subscriber.accept(signal);
+        }
+    }
+
+    private boolean isConfigured() {
+        return catalogue != null && sink != null && clock != null && roll != null;
+    }
+
+    private void react(VillagerReactionSignal signal, boolean bypassCooldown) {
         UUID villagerId = signal.villagerId();
         VillagerReactionEvent event = signal.event();
         long now = clock.getAsLong();
 
-        if (!rules.permits(villagerId, event, signal.villagerAsleep(), signal.villagerBaby(), now)) {
+        if (ReactionRules.isSilenced(event, signal.villagerAsleep(), signal.villagerBaby())) {
+            return;
+        }
+        if (!bypassCooldown && !rules.permits(villagerId, event, signal.villagerAsleep(), signal.villagerBaby(), now)) {
             return;
         }
         List<LineRef> eligible = catalogue.linesFor(event);

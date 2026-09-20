@@ -41,6 +41,8 @@ Exercises VillagerEventBus's reaction pipeline (VV-2) end to end with a fake Lin
 - `void sleepingVillagerProducesNoLineForANonSleepEvent()`
 - `void rateLimitedPlayerIsExcludedFromRecipientsButOthersStillReceiveTheLine()`
 - `void noRepeatAcrossTwoWellSeparatedPublishes()`
+- `void publishBypassingRulesIgnoresTheCooldownWithinItsWindow()` — VV-13: the debug command's whole point -- an otherwise-throttled event still reaches the sink.
+- `void publishBypassingRulesStillSilencesASleepingVillager()` — VV-13: the bypass skips cooldowns, not the sleep/baby silence rule.
 - `void unconfiguredBusStillFansOutToSubscribersOnly()`
 
 ### `class VillagerEventBusTest` — `common/src/test/java/villager_voices/VillagerEventBusTest.java`

@@ -62,5 +62,13 @@
   "subtitles.villager_voices.reaction.baby_grows.1": "Ha! Grown up already.",
   "subtitles.villager_voices.reaction.baby_grows.2": "Mrgh, my, how time flies.",
   "subtitles.villager_voices.reaction.baby_grows.3": "Ah, look at them now.",
-  "subtitles.villager_voices.reaction.baby_grows.4": "Mmh, all grown up."
+  "subtitles.villager_voices.reaction.baby_grows.4": "Mmh, all grown up.",
+  "command.villager_voices.debug.not_a_villager": "That entity is not a villager.",
+  "command.villager_voices.debug.unknown_event": "Unknown event id \"%s\". Valid ids: %s",
+  "command.villager_voices.debug.trigger.selected": "%s reacted to the forced event: \"%s\" (%s)",
+  "command.villager_voices.debug.trigger.silenced": "%s: no line -- silenced (%s)",
+  "command.villager_voices.debug.trigger.no_line": "%s: no line -- the catalogue has no eligible line for %s",
+  "command.villager_voices.debug.lines.line": "%s: \"%s\" (%s)",
+  "command.villager_voices.debug.lines.empty": "no lines loaded for %s",
+  "command.villager_voices.debug.events.list": "%s event(s): %s"
 }

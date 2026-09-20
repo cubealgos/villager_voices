@@ -42,6 +42,7 @@ Dispatches VillagerReactionSignals from every discovered VillagerEventSource to 
 - `List<VillagerEventSource> discoverSources()` — Discovers every VillagerEventSource on the classpath via ServiceLoader.
 - `void subscribe(Consumer<VillagerReactionSignal> subscriber)`
 - `void publish(VillagerReactionSignal signal)`
+- `void publishBypassingRules(VillagerReactionSignal signal)` — Publishes signal exactly as #publish does, except that ReactionRules's per-event and per-villager-global cooldown windows (REACTION-REQ-006, REACTION-REQ-007) are skipped entirely — a development-tool escape hatch (VV-13) for forcing an otherwise-throttled event during testing.
 
 ### `interface VillagerEventSource` — `common/src/main/java/villager_voices/VillagerEventSource.java`
 A loader-supplied source of VillagerReactionSignals: native events, mixins, or a per-tick poll, depending on the event and loader (docs/spec/04-architecture.md ARCH-DEC-003).

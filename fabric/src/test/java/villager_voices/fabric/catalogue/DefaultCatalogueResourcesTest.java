@@ -69,7 +69,13 @@ class DefaultCatalogueResourcesTest {
     @Test
     void everyLineSubtitleMatchesItsLangKeyTextOneToOne() throws IOException {
         Map<String, Object> lang = (Map<String, Object>) MiniJson.parse(Files.readString(LANG_FILE));
-        assertEquals(64, lang.size(), "expected 64 lang keys, found " + lang.size());
+        long subtitleKeyCount = lang.keySet().stream()
+            .filter(key -> key.startsWith("subtitles.villager_voices.reaction."))
+            .count();
+        // The lang file also carries non-subtitle keys now (VV-13's `command.villager_voices.debug.*`
+        // feedback strings) -- LINES-REQ-003 only ever promised the 64 subtitle keys line up 1:1 with
+        // the catalogue, not that the whole file holds exactly 64 keys.
+        assertEquals(64, subtitleKeyCount, "expected 64 subtitle lang keys, found " + subtitleKeyCount);
 
         List<String> mismatches = new ArrayList<>();
         for (String event : EVENTS) {
