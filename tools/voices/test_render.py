@@ -1,11 +1,9 @@
-"""Unit tests for the input-text transform and catalogue loading (`tools/voices/render.py`).
+"""Unit tests for the input-text rule and catalogue loading (`tools/voices/render.py`).
 
 No test here touches Piper, sox, or the network — those live behind `render_line`, exercised
 manually via `just voices-sample` (`tools/voices/README.md`). This file is what `just test-tools`
-runs (`AUDIO-REQ-006`'s reproducibility claim is what `test_derive_input_text_is_deterministic`
-checks)."""
+runs."""
 import json
-import re
 import sys
 import tempfile
 import unittest
@@ -16,46 +14,38 @@ import render  # noqa: E402
 
 
 class DeriveInputTextTest(unittest.TestCase):
-    def test_deterministic_for_same_inputs(self):
-        text_a = render.derive_input_text("trade_completed.1", "Mrrgh — traded! Nice.")
-        text_b = render.derive_input_text("trade_completed.1", "Mrrgh — traded! Nice.")
+    """`derive_input_text` is a no-op since `AUDIO-DEC-004` (round 1's nonsense/CV-syllable
+    transform was rejected outright — unintelligible); these tests pin that down so nobody
+    reintroduces scrambling by accident."""
+
+    def test_returns_the_subtitle_verbatim(self):
+        subtitle = "Mrrgh — traded! Nice."
+        self.assertEqual(render.derive_input_text("trade_completed.1", subtitle), subtitle)
+
+    def test_ignores_line_id(self):
+        subtitle = "Hmnh, good trade, that."
+        text_a = render.derive_input_text("trade_completed.2", subtitle)
+        text_b = render.derive_input_text("some_other.9", subtitle)
         self.assertEqual(text_a, text_b)
+        self.assertEqual(text_a, subtitle)
 
-    def test_differs_by_line_id(self):
-        subtitle = "Mrrgh — traded! Nice."
-        text_a = render.derive_input_text("trade_completed.1", subtitle)
-        text_b = render.derive_input_text("trade_completed.2", subtitle)
-        self.assertNotEqual(text_a, text_b)
-
-    def test_differs_when_subtitle_edited(self):
-        text_a = render.derive_input_text("trade_completed.1", "Mrrgh — traded! Nice.")
-        text_b = render.derive_input_text("trade_completed.1", "Mrrgh — traded! Great.")
-        self.assertNotEqual(text_a, text_b)
-
-    def test_other_lines_unaffected_by_one_subtitle_edit(self):
-        before = render.derive_input_text("trade_completed.2", "Hmnh, good trade, that.")
-        # Editing a different line's subtitle must not perturb this line's derived text — each
-        # line's RNG stream is seeded from its own (line_id, subtitle) pair only.
-        _ = render.derive_input_text("trade_completed.1", "a completely different subtitle now")
-        after = render.derive_input_text("trade_completed.2", "Hmnh, good trade, that.")
-        self.assertEqual(before, after)
-
-    def test_never_reuses_subtitle_words(self):
-        subtitle = "Mrrgh — traded! Nice."
-        text = render.derive_input_text("trade_completed.1", subtitle)
-        subtitle_words = {w.lower() for w in re.findall(r"[A-Za-z']+", subtitle)}
-        text_words = {w.lower() for w in re.findall(r"[A-Za-z']+", text)}
-        self.assertFalse(subtitle_words & text_words, f"{text!r} reuses a subtitle word from {subtitle!r}")
-
-    def test_punctuation_follows_subtitle_terminal_mark(self):
-        self.assertTrue(render.derive_input_text("offer_opened.1", "Lookin' to trade?").endswith("?"))
-        self.assertTrue(render.derive_input_text("hurt.1", "Ow! Ow ow ow!").endswith("!"))
-        self.assertTrue(render.derive_input_text("zombified.4", "Hrrgh...").endswith("..."))
-
-    def test_nonempty_for_every_catalogue_line(self):
+    def test_matches_every_catalogue_line_s_own_subtitle(self):
         for line_id, subtitle in render.load_catalogue().items():
-            text = render.derive_input_text(line_id, subtitle)
-            self.assertTrue(text.strip(), f"{line_id} produced empty input text")
+            self.assertEqual(render.derive_input_text(line_id, subtitle), subtitle)
+
+
+class SoxChainsTest(unittest.TestCase):
+    """Round 1's `pitch 500` (up) was rejected outright (`AUDIO-DEC-004`: "never up"); pin every
+    configured chain to a negative pitch so that mistake can't silently come back."""
+
+    def test_every_chain_pitches_down_never_up(self):
+        for name, args in render.SOX_CHAINS.items():
+            self.assertEqual(args[0], "pitch", f"{name}: expected 'pitch' first, got {args!r}")
+            self.assertTrue(args[1].startswith("-"), f"{name}: pitch {args[1]!r} is not negative")
+
+    def test_deep_and_deeper_share_everything_but_the_pitch_depth(self):
+        self.assertEqual(render.SOX_CHAINS["deep"][2:], render.SOX_CHAINS["deeper"][2:])
+        self.assertNotEqual(render.SOX_CHAINS["deep"][1], render.SOX_CHAINS["deeper"][1])
 
 
 class LoadCatalogueTest(unittest.TestCase):

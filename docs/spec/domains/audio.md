@@ -63,10 +63,10 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
 
 | Step | Detail |
 |---|---|
-| Input | A short nonsense/CV-syllable string per line, authored alongside the line's subtitle text (not the subtitle text itself — Piper needs phonemes to shape, not a coherent sentence it would pronounce as English). |
-| Generator | Piper TTS, the **frozen `rhasspy/piper` MIT snapshot** (archived, not the actively-maintained `OHF-Voice/piper1-gpl` GPL-3.0 fork) — build-time tool only, never shipped; ships only its output `.ogg` files (research §C). Which specific voice model, and that voice model's own licence, is **to verify at the first ticket** (research notes voice licences vary per-voice, "many MIT/CC0-ish," not a blanket claim). |
+| Input | The line's own subtitle text, exactly as written — plain English, no scrambling or nonsense/CV-syllable transform. Round 1's nonsense-syllable input (this row's original text, kept below in history) produced an unintelligible sample; Kevin's own villager phrasing already carries the character ("Mrrgh", "Hmnh", "Ah", ...), so nothing is added on top (`AUDIO-DEC-004`). |
+| Generator | Piper TTS, the **frozen `rhasspy/piper` MIT snapshot** (archived, not the actively-maintained `OHF-Voice/piper1-gpl` GPL-3.0 fork) — build-time tool only, never shipped; ships only its output `.ogg` files (research §C). Which specific voice model, and that voice model's own licence, is **to verify at the first ticket** (research notes voice licences vary per-voice, "many MIT/CC0-ish," not a blanket claim); round 1's three candidates failed the timbre approval outright, so a second sample round is underway with the same three plus a naturally-lower-register male voice (`tools/voices/VOICES.md` has the licence record). |
 | Seed | Every generation call is seeded, so a given line's output is reproducible byte-for-byte from the same input text and seed. |
-| Pitch/tempo | A fixed sox chain applied uniformly to the whole batch: `sox in.wav -r 44100 -c 1 out.ogg pitch 500 tempo 0.92` (+5 semitones, tempo decoupled from pitch) — one register for the whole catalogue, regenerable in one pass if the register needs tuning (research §C). |
+| Pitch/tempo | A fixed sox chain applied uniformly to the whole batch, retuned after round 1's sample failed intelligibility (`AUDIO-DEC-004`): pitch shifted **down**, never up, for a deep register; a nasal band boost; dulled highs; a touch less low end so "dull" doesn't read as "boomy"; loudness normalized last — `sox in.wav -r 44100 -c 1 out.ogg pitch {-300|-500} equalizer 1600 1.2q +9 treble -10 4000 lowpass 5000 bass -4 tempo 0.95 norm -3`. Two depths are in round 2's sample (`-300` "deep", `-500` "deeper"); the batch runs at whichever Kevin approves. Round 1's chain was `pitch 500 tempo 0.92` (+5 semitones **up**) — the opposite direction, and part of why the sample was unintelligible. |
 | Timbre approval | Kevin approves the timbre from a small sample batch **before** the full 64-line batch runs (`rulings-2026-09-20.md`) — a manual gate, not automated. |
 | Output format | Mono OGG Vorbis, 44.1kHz, 16-bit, ~Vorbis quality 5 (~160kbps) — matches vanilla asset convention; a 1–2s line runs roughly 15–40KB (research §B5). |
 | Hard excludes | macOS `say`/System Voices (Apple SLA bars public sharing, at any tier); Freesound CC-BY-NC; any CPML/XTTS-style non-commercial model output (research §C, `AUDIO-REQ-004`). |
@@ -99,9 +99,13 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
 
 | Question | Blocks | Decided by |
 |---|---|---|
-| The specific Piper voice model and its own licence | `AUDIO-REQ-004` | first ticket (explicitly marked "to verify" per research §C) |
-| The exact nonsense/CV-syllable input text per line (distinct from its subtitle) | `AUDIO-REQ-006` | first ticket, alongside the pipeline's first real run |
-| Whether `SoundSource.NEUTRAL` or `VOICE` is the right category | §3 "Playing server-side" | first ticket — research could not confirm `VOICE`'s vanilla purpose from mapped source |
+| The specific Piper voice model and its own licence, and the exact pitch depth (`-300` vs. `-500`) | `AUDIO-REQ-004` | first ticket resolved the licence question's mechanics; round 2 (`AUDIO-DEC-004`) resolves which candidate, pending Kevin's listen |
+
+Resolved, kept for history: the input-text question (`AUDIO-REQ-006`) — it is the subtitle verbatim,
+not a distinct nonsense string (`AUDIO-DEC-004`, reversing §3 "Input"'s original proposal).
+`SoundSource.NEUTRAL` vs. `VOICE` — settled as `NEUTRAL` in `fabric`'s
+`ReactionSoundPlayer.java` (`VV-8`); this sheet's §3 "Playing server-side" already recorded the
+reasoning, this row only confirms code matches it.
 
 ## 8. Decisions
 
@@ -123,3 +127,16 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
   entry "macOS voices excluded (licence)"), confirming the research's own finding that Apple's SLA
   bars public sharing of System Voice output regardless of profit (research §C). No alternative
   considered — this is a hard licence bar, not a quality tradeoff.
+- `AUDIO-DEC-004` — **Round 1's sample rejected outright: plain English lines, a deep/nasal/dull but
+  intelligible timbre, never a pitch-up.** Decided by Kevin, 2026-09-20, on hearing the nine round-1
+  samples (three voice models × three lines, nonsense-syllable input, `pitch 500 tempo 0.92`):
+  "they're all shit, I can't understand a single thing; the villagers in Villager News speak normal
+  English with a nasal tone, deep dull voice." Two changes follow directly: (1) Piper's input text
+  is the line's own subtitle, plain English, not a nonsense/CV-syllable transform — §3 "Input"
+  above; (2) the sox chain pitches **down** for a deep register (`pitch -300` or `pitch -500`, round
+  2 samples both), adds a nasal band boost (`equalizer 1600 1.2q +9`), dulls the highs
+  (`treble -10 4000`, `lowpass 5000`), pulls the lows back slightly so "dull" doesn't read as
+  "boomy" (`bass -4`), keeps `tempo` near round 1's (`0.95` vs. `0.92`), and normalizes loudness
+  last (`norm -3`) — §3 "Pitch/tempo" above. **Cost if wrong**: another sample round, same as
+  `AUDIO-FAIL-003` already anticipates — the sox chain and input-text rule are both still a
+  regenerable, uniform pass over the batch, not a redesign.

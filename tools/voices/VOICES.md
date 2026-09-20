@@ -38,22 +38,40 @@ Exact provenance: `rhasspy/piper@2023.11.14-2` (binary + `espeak-ng-data`) +
 
 ## Candidate voice models
 
-Three single-speaker `en_US` "medium" (22,050Hz) models from the `rhasspy/piper-voices` Hugging
-Face repository, chosen for a spread of timbre and for licences with no non-commercial or
-attribution-ambiguous clause (`AUDIO-REQ-004` hard-excludes; ruled out along the way: `ryan` —
-CC BY-NC-SA 4.0; `l2arctic` — CC BY-NC 4.0; `hfc_male`/`hfc_female` — CC BY-NC-SA 4.0; `amy`/`danny`
-— dataset licence only "see URL", not a clean citation).
+Round 1's three single-speaker `en_US` "medium" (22,050Hz) models, chosen for a spread of timbre
+and for licences with no non-commercial or attribution-ambiguous clause (`AUDIO-REQ-004`
+hard-excludes; ruled out along the way: `ryan` — CC BY-NC-SA 4.0; `l2arctic` — CC BY-NC 4.0;
+`hfc_male`/`hfc_female` — CC BY-NC-SA 4.0; `amy`/`danny` — dataset licence only "see URL", not a
+clean citation), plus round 2's addition: a naturally lower-register male voice, per Kevin's ruling
+that round 1's samples were all unintelligible and none read as "deep dull nasal"
+(`AUDIO-DEC-004`).
 
 | Model | Dataset | Licence | Source |
 |---|---|---|---|
 | `en_US-joe-medium` | `OHF-Voice/voice-datasets` | **CC0** | [MODEL_CARD](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/joe/medium/MODEL_CARD) |
 | `en_US-kristin-medium` | LibriVox (via brycebeattie.com) | **Public domain** | [MODEL_CARD](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/kristin/medium/MODEL_CARD) |
 | `en_US-norman-medium` | LibriVox | **Public domain** | [MODEL_CARD](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/norman/medium/MODEL_CARD) |
+| `en_GB-northern_english_male-medium` | OpenSLR 83 (Northern English speech corpus) | **CC BY-SA 4.0** | [MODEL_CARD](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_GB/northern_english_male/medium/MODEL_CARD) |
 
 Each model file itself (the `.onnx` weights Piper loads) is published by the `rhasspy/piper-voices`
 project; the dataset licence above is what the model card cites as the recording's own source
 licence, which is the layer `AUDIO-REQ-004` cares about (no CPML/XTTS-style non-commercial output,
-no Freesound CC-BY-NC — none of these three are either).
+no Freesound CC-BY-NC — none of these four are either).
+
+**`en_GB-northern_english_male-medium` carries a ShareAlike clause**, unlike the other three — worth
+a deliberate call, not a silent pick, if this is the one Kevin approves: CC BY-SA 4.0 requires
+attribution (fits the existing `NOTICE` discipline) and, arguably, that any adaptation (the Piper
+model's own training, arguably this pipeline's rendered `.ogg` output) stay under a compatible
+licence. `AUDIO-REQ-004`'s hard-excludes name only non-commercial licences, System Voices, and
+Freesound CC-BY-NC — ShareAlike isn't on that list, so this isn't a hard block, but it is a real
+obligation an MIT-mod release doesn't otherwise carry, and unlike the other three candidates it
+would need `NOTICE` to say more than a name-and-licence line. Flagging here rather than deciding it
+here — ruled in the vault spec if Kevin picks this one over the three round-1 holdovers.
+
+Other `en_GB`/`en_US` male candidates checked for round 2 and rejected: `en_GB-alan-medium`
+(dataset licence only "see URL", same ambiguity as `amy`/`danny`); `en_GB-aru-medium` (CC BY 4.0,
+clean, but 12 speakers — a specific `--speaker` id would need picking, deferred rather than adding
+another axis to an already-large sample round).
 
 Models are cached at `tools/voices/.cache/models/<name>/<name>.onnx(.json)`, gitignored; fetch with
 `python3 tools/voices/setup.py`.

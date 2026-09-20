@@ -9,7 +9,7 @@ catalogue-format change (`AUDIO-REQ-003`). Never invoked at runtime, never impor
 
 ```
 brew install sox                    # if not already present
-python3 tools/voices/setup.py       # fetches the frozen Piper binary + the 3 candidate voice models
+python3 tools/voices/setup.py       # fetches the frozen Piper binary + the 4 candidate voice models
 ```
 
 `setup.py` needs `gh` (authenticated) and network access — the only thing in this directory that
@@ -21,16 +21,17 @@ works around.
 ## Running it
 
 ```
-just voices-sample                    # 3 lines x each candidate model, for Kevin's timbre approval — never ships
-just voices-batch en_US-joe-medium    # all 64 lines, once a model is approved
+just voices-sample                             # 3 lines x each candidate model x each chain, for Kevin's timbre approval — never ships
+just voices-batch en_US-joe-medium deep         # all 64 lines, once a model AND a chain are approved
 ```
 
 `voices-sample` writes to the scratchpad-style `--out` directory (default
 `tools/voices/.cache/samples/`) plus a `README.md` there listing every file with its subtitle,
-derived input text, and model licence — nothing here is copied into `fabric/`'s resources.
+chain, and model licence — nothing here is copied into `fabric/`'s resources. Pass `--model` and/or
+`--chain` to narrow it to one model or one chain instead of the full cross product.
 
-`voices-batch` (`render.py --batch --model <name>`) is the only mode that writes shipped assets: it
-renders all 64 lines to
+`voices-batch` (`render.py --batch --model <name> --chain <deep|deeper>`) is the only mode that
+writes shipped assets: it renders all 64 lines to
 `fabric/src/main/resources/assets/villager_voices/sounds/reaction/<event>_<n>.ogg` and rewrites
 `fabric/src/main/resources/assets/villager_voices/sounds.json` so each of the 64 entries' `"sounds"`
 list points at its own file instead of the shared placeholder — no other part of `sounds.json`, no
@@ -40,16 +41,25 @@ explicitly gates the batch on that approval.
 
 ## The pipeline, in order
 
-1. **Input text** (`derive_input_text` in `render.py`): a short nonsense/CV-syllable string per
-   line, deterministic from `(line_id, subtitle)` — never the subtitle's own English words
-   (audio.md §3 "Input"; Piper needs phonemes to shape, not a sentence it would pronounce as
-   English). Editing one line's subtitle changes only that line's input text
-   (`test_other_lines_unaffected_by_one_subtitle_edit` in `test_render.py`).
+1. **Input text** (`derive_input_text` in `render.py`): the line's own subtitle, plain English,
+   verbatim (audio.md §3 "Input", `AUDIO-DEC-004`). Round 1 fed Piper a scrambled nonsense/CV-
+   syllable string instead; Kevin's ruling on hearing it: "they're all shit, I can't understand a
+   single thing." `derive_input_text` is now a deliberate no-op, kept as a named function (not
+   inlined) so a future line-specific adjustment has one place to land.
 2. **Piper**: `noise_scale=0`, `noise_w=0`, `length_scale=1.0` — fixed uniformly across the whole
    batch. See "Determinism" below for why.
-3. **sox**: `sox in.wav -r 44100 -c 1 -C 5 out.ogg pitch 500 tempo 0.92` — the exact chain
-   `AUDIO-DEC-002` pins (`pitch 500` = +5 semitones, `tempo` decoupled from pitch), `-C 5` for
-   audio.md §3's "~Vorbis quality 5 (~160kbps)" output-format target.
+3. **sox**, one of two chains (`SOX_CHAINS` in `render.py`), retuned after round 1's sample failed
+   intelligibility (`AUDIO-DEC-004` — "the villagers in Villager News speak normal English with a
+   nasal tone, deep dull voice"):
+   ```
+   sox in.wav -r 44100 -c 1 -C 5 out.ogg pitch {-300|-500} equalizer 1600 1.2q +9 treble -10 4000 lowpass 5000 bass -4 tempo 0.95 norm -3
+   ```
+   `pitch -300`/`-500` — down, never up (round 1's `pitch 500` was +5 semitones **up**, part of why
+   it was unintelligible) — `"deep"` and `"deeper"` respectively; `equalizer 1600 1.2q +9` — a nasal
+   band boost; `treble -10 4000` + `lowpass 5000` — dulled highs; `bass -4` — lows pulled back so
+   "dull" doesn't read as "boomy"; `tempo 0.95` — near round 1's `0.92`; `norm -3` — consistent
+   loudness across lines/models. `-C 5` (unchanged) is audio.md §3's "~Vorbis quality 5
+   (~160kbps)" output-format target.
 
 ## Determinism (`AUDIO-REQ-006`)
 

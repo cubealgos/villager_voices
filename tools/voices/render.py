@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""The Piper voice pipeline (`docs/spec/domains/audio.md` §3, `AUDIO-DEC-002`).
+"""The Piper voice pipeline (`docs/spec/domains/audio.md` §3, `AUDIO-DEC-004`).
 
 Reads the 64-line reaction catalogue (the 16 JSON files under
-`fabric/src/main/resources/data/villager_voices/reaction/`), derives a per-line nonsense/CV-syllable
-input string for each line (distinct from its subtitle, audio.md §3 "Input"; `derive_input_text`
-below), runs it through the frozen MIT `rhasspy/piper` snapshot and a fixed sox chain, and writes
+`fabric/src/main/resources/data/villager_voices/reaction/`), feeds each line's own subtitle to the
+frozen MIT `rhasspy/piper` snapshot verbatim (round 1's nonsense/CV-syllable transform was rejected
+outright — unintelligible; `AUDIO-DEC-004`), runs the output through a fixed sox chain, and writes
 mono OGG Vorbis output.
 
 Two modes:
 
-* `--sample`: a fixed 3-line slice rendered once per candidate voice model, for Kevin's timbre
-  approval (`AUDIO-FAIL-003`) — never touches the shipped assets.
-* `--batch`: all 64 lines against one approved `--model`, written to their shipped paths
-  (`fabric/src/main/resources/assets/villager_voices/sounds/reaction/<event>_<n>.ogg`,
+* `--sample`: a fixed 3-line slice rendered once per candidate voice model **and** once per pitch
+  `--chain` (`deep`/`deeper`), for Kevin's timbre approval (`AUDIO-FAIL-003`) — never touches the
+  shipped assets.
+* `--batch`: all 64 lines against one approved `--model` and `--chain`, written to their shipped
+  paths (`fabric/src/main/resources/assets/villager_voices/sounds/reaction/<event>_<n>.ogg`,
   audio.md §3 "File naming"), then rewrites `sounds.json` so each entry points at its own file —
   the only change `AUDIO-REQ-003` allows. Do not run `--batch` before Kevin has approved a sample.
 
@@ -25,8 +26,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import random
-import re
 import shutil
 import subprocess
 import sys
@@ -45,10 +44,24 @@ PIPER_BIN = PIPER_DIR / "piper"
 ESPEAK_DATA = PIPER_DIR / "espeak-ng-data"
 MODELS_DIR = CACHE_DIR / "models"
 
-# The fixed sox chain (audio.md §3 "Pitch/tempo", `AUDIO-DEC-002`): one register for the whole
-# catalogue, applied identically in --sample and --batch so the approved sample predicts the batch.
+# The fixed sox chains (audio.md §3 "Pitch/tempo", `AUDIO-DEC-004`): pitched down for a deep
+# register, a nasal EQ boost, dulled highs, pulled-back lows so "dull" doesn't read as "boomy", and
+# a final loudness normalize — applied identically in --sample and --batch so the approved sample
+# predicts the batch. Round 1's chain (`pitch 500 tempo 0.92`, pitched *up*) was rejected outright
+# as unintelligible; two depths are sampled in round 2, "deep" and "deeper".
 SOX_FORMAT_ARGS = ["-r", "44100", "-c", "1", "-C", "5"]  # 44.1kHz mono, ~Vorbis quality 5
-SOX_EFFECT_ARGS = ["pitch", "500", "tempo", "0.92"]  # +5 semitones, tempo decoupled from pitch
+_NASAL_DULL_TAIL = [
+    "equalizer", "1600", "1.2q", "+9",  # nasal band boost
+    "treble", "-10", "4000",  # dulled highs
+    "lowpass", "5000",
+    "bass", "-4",  # lows pulled back so "dull" doesn't read as "boomy"
+    "tempo", "0.95",
+    "norm", "-3",  # consistent loudness
+]
+SOX_CHAINS = {
+    "deep": ["pitch", "-300", *_NASAL_DULL_TAIL],
+    "deeper": ["pitch", "-500", *_NASAL_DULL_TAIL],
+}
 
 # Piper synthesis parameters, fixed uniformly across every line (see "Determinism" in
 # tools/voices/README.md for why noise_scale/noise_w are 0, not a --seed flag).
@@ -57,7 +70,12 @@ PIPER_NOISE_W = "0"
 PIPER_LENGTH_SCALE = "1.0"
 
 # Candidates for the sample round (tools/voices/VOICES.md has the full licence record).
-CANDIDATE_MODELS = ("en_US-joe-medium", "en_US-kristin-medium", "en_US-norman-medium")
+CANDIDATE_MODELS = (
+    "en_US-joe-medium",
+    "en_US-kristin-medium",
+    "en_US-norman-medium",
+    "en_GB-northern_english_male-medium",
+)
 
 # A fixed 3-line slice spanning the catalogue's tonal range, for the sample round.
 SAMPLE_LINE_IDS = ("trade_completed.1", "hurt.2", "panic.2")
@@ -80,45 +98,19 @@ def load_catalogue() -> dict[str, str]:
     return lines
 
 
-# --- Input text: the nonsense/CV-syllable transform -----------------------------------------------
-
-_CONSONANTS = ("m", "n", "r", "h", "g", "l", "w")
-_VOWELS = ("a", "o", "u", "e", "i")
-_INTERJECTIONS = ("hrmm", "mrgh", "nnh", "grh", "mmh", "hnh")
-
-
-def _syllable(rng: random.Random) -> str:
-    onset = rng.choice(_CONSONANTS)
-    if rng.random() < 0.35:
-        onset += rng.choice(_CONSONANTS)
-    vowel = rng.choice(_VOWELS) * rng.randint(2, 3)
-    return onset + vowel
-
+# --- Input text -------------------------------------------------------------------------------------
 
 def derive_input_text(line_id: str, subtitle: str) -> str:
-    """The per-line Piper input: nonsense/CV syllables, never the subtitle's own English words
-    (audio.md §3 "Input" — Piper needs phonemes to shape, not a sentence it would pronounce as
-    English). Deterministic from (line_id, subtitle) so a regenerated batch is diffable
-    (`AUDIO-REQ-006`): editing a subtitle changes its line's input text but no other line's.
+    """The per-line Piper input: the subtitle itself, plain English, verbatim (audio.md §3 "Input",
+    `AUDIO-DEC-004`). Round 1 fed Piper a scrambled nonsense/CV-syllable string instead — Kevin's
+    ruling on hearing it: "they're all shit, I can't understand a single thing." The subtitle's own
+    villager interjections ("Mrrgh", "Hmnh", "Ah", ...) already carry the character; this function
+    is deliberately a no-op (kept, not inlined, so call sites read the same as round 1's and so a
+    future line-specific adjustment has one place to land) — `line_id` is unused but kept in the
+    signature for that reason.
     """
-    rng = random.Random(f"{line_id}\0{subtitle}")
-    word_count = max(1, len(re.findall(r"[A-Za-z']+", subtitle)))
-    syllable_count = max(2, min(5, word_count))
-    syllables = [_syllable(rng) for _ in range(syllable_count)]
-    if rng.random() < 0.6:
-        syllables.insert(rng.randrange(len(syllables) + 1), rng.choice(_INTERJECTIONS))
-    text = " ".join(syllables)
-    text = text[0].upper() + text[1:]
-    stripped = subtitle.rstrip()
-    if stripped.endswith("?"):
-        text += "?"
-    elif stripped.endswith("!"):
-        text += "!"
-    elif stripped.endswith("..."):
-        text += "..."
-    else:
-        text += "."
-    return text
+    del line_id  # unused: the transform no longer varies by line identity, only by subtitle.
+    return subtitle
 
 
 # --- Piper + sox -----------------------------------------------------------------------------------
@@ -138,9 +130,12 @@ def _require_tools(model_name: str) -> Path:
     return model_path
 
 
-def render_line(model_name: str, text: str, out_ogg: Path) -> None:
-    """Runs Piper on `text` with `model_name`, then the fixed sox chain, writing `out_ogg`."""
+def render_line(model_name: str, text: str, out_ogg: Path, chain: str) -> None:
+    """Runs Piper on `text` with `model_name`, then the named sox chain (`SOX_CHAINS`), writing
+    `out_ogg`."""
     model_path = _require_tools(model_name)
+    if chain not in SOX_CHAINS:
+        raise PipelineError(f"unknown sox chain {chain!r}; choose one of {sorted(SOX_CHAINS)}")
     out_ogg.parent.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, DYLD_LIBRARY_PATH=str(PIPER_DIR), LD_LIBRARY_PATH=str(PIPER_DIR))
     with tempfile.TemporaryDirectory() as tmp:
@@ -153,7 +148,7 @@ def render_line(model_name: str, text: str, out_ogg: Path) -> None:
         proc = subprocess.run(piper_cmd, input=text, capture_output=True, text=True, env=env)
         if proc.returncode != 0 or not wav_path.exists():
             raise PipelineError(f"piper failed for {text!r}: {proc.stderr.strip()}")
-        sox_cmd = ["sox", str(wav_path), *SOX_FORMAT_ARGS, str(out_ogg), *SOX_EFFECT_ARGS]
+        sox_cmd = ["sox", str(wav_path), *SOX_FORMAT_ARGS, str(out_ogg), *SOX_CHAINS[chain]]
         proc = subprocess.run(sox_cmd, capture_output=True, text=True)
         if proc.returncode != 0 or not out_ogg.exists():
             raise PipelineError(f"sox failed for {out_ogg}: {proc.stderr.strip()}")
@@ -161,30 +156,34 @@ def render_line(model_name: str, text: str, out_ogg: Path) -> None:
 
 # --- Modes -----------------------------------------------------------------------------------------
 
-def run_sample(out_dir: Path, models: tuple[str, ...]) -> None:
+def run_sample(out_dir: Path, models: tuple[str, ...], chains: tuple[str, ...]) -> None:
     catalogue = load_catalogue()
     out_dir.mkdir(parents=True, exist_ok=True)
     readme_lines = [
-        "# Piper voice-model sample round (VV-11)",
+        "# Piper voice-model sample round 2 (VV-11)",
         "",
-        "Three lines, spanning the catalogue's tonal range, rendered once per candidate voice",
-        "model with the pipeline's fixed sox chain (`pitch 500 tempo 0.92`). For Kevin's timbre",
-        "approval before the full 64-line batch (`AUDIO-FAIL-003`) — nothing here is shipped.",
+        "Three lines x each candidate voice model x each pitch chain (`deep` = `pitch -300`,",
+        "`deeper` = `pitch -500`, both then the shared nasal/dull/loudness tail — see",
+        "`tools/voices/README.md`). Round 1's samples were rejected outright (Kevin, 2026-09-20:",
+        "\"they're all shit, I can't understand a single thing\"); round 2 feeds Piper the subtitle's",
+        "own plain English instead of nonsense syllables, and pitches down instead of up",
+        "(`AUDIO-DEC-004`). For Kevin's timbre approval — nothing here is shipped.",
         "",
-        "| Model | Licence | Line | Subtitle | Input text | File |",
+        "| Model | Licence | Chain | Line | Subtitle | File |",
         "|---|---|---|---|---|---|",
     ]
     for model in models:
-        for line_id in SAMPLE_LINE_IDS:
-            subtitle = catalogue[line_id]
-            text = derive_input_text(line_id, subtitle)
-            out_ogg = out_dir / model / f"{line_id}.ogg"
-            print(f"rendering {model}/{line_id}.ogg  ({text!r})")
-            render_line(model, text, out_ogg)
-            licence = CANDIDATE_LICENCES.get(model, "see tools/voices/VOICES.md")
-            readme_lines.append(
-                f"| {model} | {licence} | {line_id} | {subtitle} | {text} | `{model}/{line_id}.ogg` |"
-            )
+        for chain in chains:
+            for line_id in SAMPLE_LINE_IDS:
+                subtitle = catalogue[line_id]
+                text = derive_input_text(line_id, subtitle)
+                out_ogg = out_dir / model / f"{line_id}.{chain}.ogg"
+                print(f"rendering {model}/{line_id}.{chain}.ogg  ({text!r})")
+                render_line(model, text, out_ogg, chain)
+                licence = CANDIDATE_LICENCES.get(model, "see tools/voices/VOICES.md")
+                readme_lines.append(
+                    f"| {model} | {licence} | {chain} | {line_id} | {subtitle} | `{model}/{line_id}.{chain}.ogg` |"
+                )
     (out_dir / "README.md").write_text("\n".join(readme_lines) + "\n", encoding="utf-8")
     print(f"sample round written to {out_dir}")
 
@@ -193,17 +192,18 @@ CANDIDATE_LICENCES = {
     "en_US-joe-medium": "CC0 (OHF-Voice/voice-datasets)",
     "en_US-kristin-medium": "Public domain (LibriVox)",
     "en_US-norman-medium": "Public domain (LibriVox)",
+    "en_GB-northern_english_male-medium": "CC-BY-SA 4.0 (OpenSLR 83)",
 }
 
 
-def run_batch(model: str) -> None:
+def run_batch(model: str, chain: str) -> None:
     catalogue = load_catalogue()
     for line_id, subtitle in sorted(catalogue.items()):
         event, n = line_id.rsplit(".", 1)
         text = derive_input_text(line_id, subtitle)
         out_ogg = SHIPPED_SOUNDS_DIR / f"{event}_{n}.ogg"
         print(f"rendering {out_ogg.relative_to(REPO_ROOT)}  ({text!r})")
-        render_line(model, text, out_ogg)
+        render_line(model, text, out_ogg, chain)
 
     sounds = json.loads(SOUNDS_JSON.read_text(encoding="utf-8"))
     for line_id in catalogue:
@@ -222,17 +222,22 @@ def main() -> int:
     mode.add_argument("--sample", action="store_true", help="render the fixed sample slice for timbre approval")
     mode.add_argument("--batch", action="store_true", help="render all 64 lines and rewrite sounds.json")
     parser.add_argument("--model", help="voice model name (required for --batch; --sample defaults to all candidates)")
+    parser.add_argument("--chain", choices=sorted(SOX_CHAINS),
+                         help="sox pitch chain (required for --batch; --sample defaults to all chains)")
     parser.add_argument("--out", type=Path, default=CACHE_DIR / "samples", help="--sample output directory")
     args = parser.parse_args()
 
     try:
         if args.sample:
             models = (args.model,) if args.model else CANDIDATE_MODELS
-            run_sample(args.out, models)
+            chains = (args.chain,) if args.chain else tuple(sorted(SOX_CHAINS))
+            run_sample(args.out, models, chains)
         else:
             if not args.model:
                 parser.error("--batch requires --model")
-            run_batch(args.model)
+            if not args.chain:
+                parser.error("--batch requires --chain")
+            run_batch(args.model, args.chain)
     except PipelineError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
