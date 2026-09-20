@@ -9,7 +9,7 @@ The 64 registered SoundEvents (docs/spec/domains/audio.md, AUDIO-REQ-001), the f
 
 ### `class FabricLineSink` — `fabric/src/main/java/villager_voices/fabric/sound/FabricLineSink.java`
 VV-2's LineSink, implemented: the adapter that closes the alpha loop.
-- `FabricLineSink(MinecraftServer server, Config config, DisplayQueue displayQueue)`
+- `FabricLineSink(MinecraftServer server, Config config, DisplayQueue displayQueue, TalkingStateSync talkingStateSync)`
 - `void show(UUID villagerId, Set<UUID> playerIds, LineRef line)`
 
 ### `class ReactionSoundPlayer` — `fabric/src/main/java/villager_voices/fabric/sound/ReactionSoundPlayer.java`

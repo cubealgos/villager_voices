@@ -70,5 +70,7 @@
   "command.villager_voices.debug.trigger.no_line": "%s: no line -- the catalogue has no eligible line for %s",
   "command.villager_voices.debug.lines.line": "%s: \"%s\" (%s)",
   "command.villager_voices.debug.lines.empty": "no lines loaded for %s",
-  "command.villager_voices.debug.events.list": "%s event(s): %s"
+  "command.villager_voices.debug.events.list": "%s event(s): %s",
+  "villager_voices.emf.is_talking.title": "Villager Voices: Is Talking",
+  "villager_voices.emf.is_talking.explanation": "True for the exact duration of the villager's currently-playing reaction line."
 }

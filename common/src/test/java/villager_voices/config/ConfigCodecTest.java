@@ -28,7 +28,7 @@ final class ConfigCodecTest {
     @Test
     void serializeThenParseRoundTripsExactly() {
         Config original = new Config("1.0", 111, 22, 3, false, true, 44, 0.75, 12.5,
-                new Config.CategoryMutes(true, false, true, false));
+                new Config.CategoryMutes(true, false, true, false), 55);
 
         Config roundTripped = ConfigCodec.parse(ConfigCodec.serialize(original));
 
@@ -114,7 +114,27 @@ final class ConfigCodecTest {
 
     @Test
     void blankSchemaVersionResetsToTheCurrentOne() {
-        Config config = new Config("", 0, 0, 0, true, true, 0, 1, 1, Config.CategoryMutes.NONE_MUTED);
+        Config config = new Config("", 0, 0, 0, true, true, 0, 1, 1, Config.CategoryMutes.NONE_MUTED, 0);
         assertEquals(Config.SCHEMA_VERSION, config.schemaVersion());
+    }
+
+    @Test
+    void talkingDurationTicksRoundTripsAndClampsLikeEveryOtherTickField() {
+        String json = """
+                { "compat": { "talkingDurationTicks": 77 } }
+                """;
+
+        assertEquals(77L, ConfigCodec.parse(json).talkingDurationTicks());
+        assertEquals(Config.DEFAULT_TALKING_DURATION_TICKS,
+                ConfigCodec.parse("{}").talkingDurationTicks());
+    }
+
+    @Test
+    void aNegativeTalkingDurationInTheFileIsClampedToItsDefaultByConfigItself() {
+        String json = """
+                { "compat": { "talkingDurationTicks": -1 } }
+                """;
+
+        assertEquals(Config.DEFAULT_TALKING_DURATION_TICKS, ConfigCodec.parse(json).talkingDurationTicks());
     }
 }

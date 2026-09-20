@@ -16,15 +16,19 @@ signature page before calling into a package you did not write.
 |---|---|---|---|
 | `villager_voices` | common | LineCatalogue, LineRef, LineSelector, LineSink, PanicDetector, ReactionRules, StareDetector, VillagerEventBus, VillagerEventSource, VillagerReactionEvent, VillagerReactionSignal | Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001). |
 | `villager_voices.catalogue` | common | Catalogue, CatalogueCodec, CatalogueLoadException, Line, MiniJson | The data-driven line catalogue (docs/spec/domains/reaction-lines.md, `REACTION-DEC-001`): a pure Java codec for data/villager_voices/reaction/.json, keyed by event id string (e.g. |
+| `villager_voices.compat` | common | TalkingState |  |
 | `villager_voices.config` | common | Config, ConfigCodec | The one config file this mod writes (docs/spec/contracts/data-contract.md DATA-REQ-002): a pure Java model (villager_voices.config.Config) and its parser/serialiser (villager_voices.config.ConfigCodec), built on villager_voices.catalogue.MiniJson rather than a new dependency. |
 | `villager_voices.display` | common | DisplayFormat, DisplayLine, DisplayQueue | The action-bar display channel: the per-player villager_voices.display.DisplayQueue, its villager_voices.display.DisplayLine input, and the pure villager_voices.display.DisplayFormat (docs/spec/domains/display.md). |
 | `villager_voices` | common (test) | LineSelectorTest, PanicDetectorTest, ReactionRulesTest, StareDetectorTest, VillagerEventBusReactionTest, VillagerEventBusTest |  |
 | `villager_voices.catalogue` | common (test) | CatalogueCodecTest, CatalogueTest, MiniJsonTest |  |
+| `villager_voices.compat` | common (test) | TalkingStateTest |  |
 | `villager_voices.config` | common (test) | ConfigCodecTest |  |
 | `villager_voices.display` | common (test) | DisplayFormatTest, DisplayQueueTest |  |
 | `villager_voices.fabric` | fabric | FabricVillagerEventSource, VillagerVoicesFabric |  |
 | `villager_voices.fabric.catalogue` | fabric | CatalogueReloadListener, FabricLineCatalogue |  |
 | `villager_voices.fabric.client` | fabric | VillagerVoicesFabricClient |  |
+| `villager_voices.fabric.compat` | fabric | ClientTalkingState, EmfCompat, TalkingClientNetworking, TalkingPayload, TalkingPayloadSender, TalkingRenderState, TalkingStateSync |  |
+| `villager_voices.fabric.compat.mixin` | fabric | VillagerTalkingRenderStateMixin, ZombieVillagerTalkingRenderStateMixin |  |
 | `villager_voices.fabric.config` | fabric | ConfigLoader | Reads and writes config/villager_voices.json (docs/spec/contracts/data-contract.md DATA-REQ-002) — the one file-system-touching piece villager_voices.config (the pure model and codec) cannot itself be, since a config directory is a loader concept (ARCH-DEC-001). |
 | `villager_voices.fabric.debug` | fabric | DebugCommand |  |
 | `villager_voices.fabric.display` | fabric | ActionBarDisplay | The Fabric-side push for common's villager_voices.display package (docs/spec/domains/display.md): villager_voices.fabric.display.ActionBarDisplay drains the per-player DisplayQueue every server tick and calls ServerPlayer#sendOverlayMessage. |
@@ -33,6 +37,7 @@ signature page before calling into a package you did not write.
 | `villager_voices.fabric.sound` | fabric | FabricLineSink, ReactionSoundPlayer, SoundRegistration | The 64 registered SoundEvents (docs/spec/domains/audio.md, AUDIO-REQ-001), the fabric-side ServerLevel.playSeededSound call, and the LineSink adapter that ties VV-2's reaction pipeline, VV-3's catalogue, and VV-7's display queue into an actually playing/displaying reaction (VV-8). |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
 | `villager_voices.fabric.catalogue` | fabric (test) | DefaultCatalogueResourcesTest |  |
+| `villager_voices.fabric.compat` | fabric (gametest) | TalkingStateSyncGameTest |  |
 | `villager_voices.fabric.config` | fabric (test) | ConfigLoaderTest |  |
 | `villager_voices.fabric.debug` | fabric (gametest) | DebugCommandGameTest |  |
 | `villager_voices.fabric.display` | fabric (gametest) | DisplayQueueGameTest |  |

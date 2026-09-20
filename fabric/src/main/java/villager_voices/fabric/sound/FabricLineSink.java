@@ -17,6 +17,7 @@ import villager_voices.display.DisplayLine;
 import villager_voices.display.DisplayQueue;
 import villager_voices.fabric.VillagerVoicesFabric;
 import villager_voices.fabric.catalogue.CatalogueReloadListener;
+import villager_voices.fabric.compat.TalkingStateSync;
 
 import java.util.Locale;
 import java.util.Set;
@@ -33,6 +34,10 @@ import java.util.UUID;
  * <p>{@code playerIds} arrives already filtered by the server-wide per-player rate limit
  * ({@code REACTION-REQ-008}, VV-2's own {@link LineSink} contract); narrowing it further to players
  * within hearing range, and actually online in the villager's own level, is this class's own job.
+ *
+ * <p>Also marks the villager talking for the sound's own duration and syncs that to nearby players
+ * (VV-12, docs/spec/domains/compat.md {@code COMPAT-REQ-002}), via {@link TalkingStateSync} — kept
+ * as a separate collaborator, not this class's own concern beyond the one call below.
  */
 public final class FabricLineSink implements LineSink {
 
@@ -49,11 +54,14 @@ public final class FabricLineSink implements LineSink {
     private final MinecraftServer server;
     private final Config config;
     private final DisplayQueue displayQueue;
+    private final TalkingStateSync talkingStateSync;
 
-    public FabricLineSink(MinecraftServer server, Config config, DisplayQueue displayQueue) {
+    public FabricLineSink(MinecraftServer server, Config config, DisplayQueue displayQueue,
+            TalkingStateSync talkingStateSync) {
         this.server = server;
         this.config = config;
         this.displayQueue = displayQueue;
+        this.talkingStateSync = talkingStateSync;
     }
 
     @Override
@@ -86,6 +94,8 @@ public final class FabricLineSink implements LineSink {
 
         ReactionSoundPlayer.play(level, pos, line.id(),
                 (float) (BASE_VOLUME * config.displayMasterVolume()), BASE_PITCH);
+
+        talkingStateSync.markTalking(server, level, villagerId, pos, playerIds, config, server.getTickCount());
     }
 
     /**

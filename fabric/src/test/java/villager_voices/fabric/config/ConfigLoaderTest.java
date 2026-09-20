@@ -42,7 +42,7 @@ class ConfigLoaderTest {
 
     @Test
     void aCustomisedFileOnDiskIsHonouredInsteadOfBeingOverwritten(@TempDir Path configDir) throws IOException {
-        Config custom = new Config("1.0", 999, 1, 1, false, true, 5, 0.5, 8.0, Config.CategoryMutes.NONE_MUTED);
+        Config custom = new Config("1.0", 999, 1, 1, false, true, 5, 0.5, 8.0, Config.CategoryMutes.NONE_MUTED, 60);
         Files.writeString(configDir.resolve(ConfigLoader.FILE_NAME), ConfigCodec.serialize(custom));
 
         Config loaded = ConfigLoader.loadOrCreateDefault(configDir);
