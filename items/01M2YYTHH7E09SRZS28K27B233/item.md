@@ -28,12 +28,12 @@ event's own before/after entity types, not a second hook.
 
 ## Acceptance criteria
 
-- [ ] All six events fire and reach the bus in a real Fabric 26.2 world game test
+- [x] All six events fire and reach the bus in a real Fabric 26.2 world game test
       (`docs/spec/operations/testing.md`).
-- [ ] The `zombified`→`cured` direction split is proven by two distinct game tests, not assumed from
+- [x] The `zombified`→`cured` direction split is proven by two distinct game tests, not assumed from
       the single `MOB_CONVERSION` hook (closes `reaction.md` §7's "inferred, not confirmed" flag for
       both).
-- [ ] `sleep`/`wake` correctly suppress every other event for that villager while asleep
+- [x] `sleep`/`wake` correctly suppress every other event for that villager while asleep
       (`REACTION-REQ-009`) — a game test triggering a second event mid-sleep and confirming it does
       not reach the bus.
 
