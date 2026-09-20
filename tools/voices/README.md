@@ -1,15 +1,18 @@
-# `tools/voices/` — the Piper pipeline
+# `tools/voices/` — the voice pipeline
 
 Build-time-only (`AUDIO-REQ-005`, `docs/spec/domains/audio.md`): generates the real `.ogg` files
 that replace VV-8's placeholder sound, at their existing paths, with zero code, registration, or
 catalogue-format change (`AUDIO-REQ-003`). Never invoked at runtime, never imported by `common` or
-`fabric`'s Java sources, never run by a Gradle task or CI.
+`fabric`'s Java sources, never run by a Gradle task or CI. Two engines (`--engine`): `piper`
+(default, rounds 1–3, kept as the fallback) and `chatterbox` (round four, `AUDIO-DEC-006` — clones
+the vanilla villager's own timbre from its grunt clips; see "The clone engine" below).
 
 ## Setup (once per machine)
 
 ```
 brew install sox                    # if not already present
 python3 tools/voices/setup.py       # fetches the frozen Piper binary + the 4 candidate voice models
+python3 tools/voices/setup.py --clone   # also sets up the Chatterbox clone-engine venv (needs `uv`)
 ```
 
 `setup.py` needs `gh` (authenticated) and network access — the only thing in this directory that
@@ -38,6 +41,41 @@ list points at its own file instead of the shared placeholder — no other part 
 registration, and no catalogue JSON changes (`AUDIO-REQ-003`). **Do not run this before Kevin has
 approved a sample timbre** (`AUDIO-FAIL-003`) — the ticket that ordered this pipeline (`VV-11`)
 explicitly gates the batch on that approval.
+
+## The clone engine (`--engine chatterbox`, `AUDIO-DEC-006`)
+
+```
+tools/voices/.venv-clone/bin/python tools/voices/render.py \
+    --sample --engine chatterbox --reference <path-to-reference.wav> \
+    [--exaggeration 0.7] [--cfg 0.3] [--chain tail|none]
+
+tools/voices/.venv-clone/bin/python tools/voices/render.py \
+    --batch --engine chatterbox --reference <path-to-reference.wav> --chain tail
+```
+
+Run with the clone venv's own `python` (`tools/voices/.venv-clone/`, `setup.py --clone`) — this file
+still imports cleanly without Chatterbox/torch installed (`test_render.py` covers argument
+validation only, never a real render), but actually generating audio needs the venv. `--reference`
+is a reference WAV built from vanilla's own villager clips, read from the client's own asset cache
+at generation time and never committed (`tools/voices/reference.py`, `COMP-REQ-002`):
+
+```
+cd tools/voices && .venv-clone/bin/python -c "
+from pathlib import Path
+import reference
+reference.build_named_reference('talking', Path('/somewhere/outside/the/repo/reference.wav'), Path('/tmp/reference-scratch'))
+"
+```
+
+`REFERENCE_SETS` in `reference.py` names three: `all` (every villager clip vanilla ships), `talking`
+(idle+haggle+yes only — the ones that read as speech), `idle` (idle only, the smallest). `--chain`
+selects a `CLONE_POST_CHAINS` entry (`tail`: a light nasal lift + top-end rolloff + normalize;
+`none`: raw clone output, format conversion only) — a much lighter touch than Piper's `SOX_CHAINS`,
+since the reference itself supplies the villager timbre this time. `--exaggeration`/`--cfg` map
+directly to Chatterbox's own `exaggeration`/`cfg_weight` generation parameters (defaults 0.5/0.5).
+Every line's torch seed is derived deterministically from its own line id (`render.derive_seed`,
+`AUDIO-REQ-006`) so a rerun reproduces byte-identical output (verified: identical MD5 across two
+runs of the same seed/text/reference on CPU).
 
 ## The pipeline, in order
 
@@ -87,7 +125,9 @@ and voice-model credit is added by this ticket; the Modrinth listing text is VV-
 
 ## Tests
 
-`test_render.py` (`just test-tools`) covers `derive_input_text` and `load_catalogue` only — pure
-Python, no Piper/sox/network dependency, so it runs the same on a machine that hasn't run
-`setup.py`. Actually rendering audio is exercised manually via `just voices-sample`, not by the
-test suite.
+`test_render.py` (`just test-tools`) covers `derive_input_text`, `load_catalogue`, `derive_seed`,
+`chains_for_engine`, `render_line`'s own argument-validation branches, and (via `reference.py`)
+asset-index resolution against a fake fabric-loom asset cache — all pure Python, no Piper/
+Chatterbox/sox/network dependency, so it runs the same on a machine that has set up neither engine.
+Actually rendering audio (either engine) is exercised manually via `just voices-sample` or the
+clone-engine commands above, not by the test suite.

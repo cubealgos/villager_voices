@@ -20,3 +20,13 @@ dist/
 # The Piper binary, voice models, and local sample renders (tools/voices/README.md) — fetched by
 # tools/voices/setup.py, never committed.
 tools/voices/.cache/
+
+# The Chatterbox clone-engine venv (tools/voices/VOICES.md "Round 4", AUDIO-DEC-006) — set up by
+# `tools/voices/setup.py --clone`, never committed.
+tools/voices/.venv-clone/
+
+# Any vanilla-villager cloning-reference WAV built locally (tools/voices/reference.py) — derived
+# from Mojang audio, never committed (COMP-REQ-002); the pipeline itself only ever writes one to
+# the scratchpad, but this covers a reference built by hand inside the repo too.
+tools/voices/*reference*.wav
+tools/voices/.reference-cache/

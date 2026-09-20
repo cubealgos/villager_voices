@@ -1,8 +1,11 @@
-"""Unit tests for the input-text rule and catalogue loading (`tools/voices/render.py`).
+"""Unit tests for the input-text rule, catalogue loading, and engine dispatch/argument-validation
+(`tools/voices/render.py`), plus the reference-set builder (`tools/voices/reference.py`).
 
-No test here touches Piper, sox, or the network — those live behind `render_line`, exercised
-manually via `just voices-sample` (`tools/voices/README.md`). This file is what `just test-tools`
-runs."""
+No test here touches Piper, sox, Chatterbox, or the network — those live behind `render_line`'s two
+backends, exercised manually via `just voices-sample` (`tools/voices/README.md`) or the round-four
+scratchpad driver. `render_line`'s own argument-validation branches (missing `--model`/`--reference`,
+an unknown engine) are pure Python and short-circuit before either backend's own heavy import, so
+they're covered here without either engine installed. This file is what `just test-tools` runs."""
 import json
 import sys
 import tempfile
@@ -10,6 +13,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import reference  # noqa: E402
 import render  # noqa: E402
 
 
@@ -76,20 +80,6 @@ class SoxChainsTest(unittest.TestCase):
         self.assertNotEqual(render.SOX_CHAINS["deep"][1], render.SOX_CHAINS["deeper"][1])
 
 
-class SampleTextOverridesTest(unittest.TestCase):
-    """Round 3's `AUDIO-DEC-005` overrides — the written grunt removed for the sample slice only,
-    since the game now plays the vanilla grunt itself (`AUDIO-REQ-007`)."""
-
-    def test_every_override_key_is_a_sample_line(self):
-        self.assertTrue(set(render.SAMPLE_TEXT_OVERRIDES) <= set(render.SAMPLE_LINE_IDS))
-
-    def test_overrides_have_no_leading_villager_grunt(self):
-        for line_id, text in render.SAMPLE_TEXT_OVERRIDES.items():
-            subtitle = render.load_catalogue()[line_id]
-            self.assertNotEqual(text, subtitle, f"{line_id}: override should differ from the subtitle")
-            self.assertTrue(text[0].isupper(), f"{line_id}: {text!r} should read as a clean sentence")
-
-
 class LoadCatalogueTest(unittest.TestCase):
     def test_reads_all_64_lines_from_the_real_catalogue(self):
         catalogue = render.load_catalogue()
@@ -127,6 +117,174 @@ class LoadCatalogueTest(unittest.TestCase):
                     render.load_catalogue()
             finally:
                 render.CATALOGUE_DIR = original
+
+
+class DeriveSeedTest(unittest.TestCase):
+    """`derive_seed` (`AUDIO-REQ-006`): the clone engine's deterministic torch seed, hashed from the
+    line id alone so the batch is reproducible without a hand-maintained seed table."""
+
+    def test_same_line_id_same_seed(self):
+        self.assertEqual(render.derive_seed("trade_completed.1"), render.derive_seed("trade_completed.1"))
+
+    def test_different_line_ids_different_seeds(self):
+        seeds = {render.derive_seed(line_id) for line_id in render.load_catalogue()}
+        self.assertEqual(len(seeds), len(render.load_catalogue()), "expected no seed collisions across the real catalogue")
+
+    def test_seed_is_a_valid_32_bit_unsigned_value(self):
+        for line_id in ("trade_completed.1", "hurt.2", "panic.2"):
+            seed = render.derive_seed(line_id)
+            self.assertIsInstance(seed, int)
+            self.assertTrue(0 <= seed < 2**32)
+
+
+class ClonePostChainsTest(unittest.TestCase):
+    """`CLONE_POST_CHAINS` (round four, `AUDIO-DEC-006`): a light tail only, unlike Piper's heavier
+    `SOX_CHAINS`, plus a "none" control variant that changes nothing."""
+
+    def test_none_chain_is_empty(self):
+        self.assertEqual(render.CLONE_POST_CHAINS["none"], [])
+
+    def test_tail_chain_has_no_pitch_or_tempo_effect(self):
+        # Unlike Piper's chains, the clone engine's timbre comes from the reference itself — its
+        # post-processing must never reach for `pitch` or `tempo`, only tone-shaping and loudness.
+        tail = render.CLONE_POST_CHAINS["tail"]
+        self.assertNotIn("pitch", tail)
+        self.assertNotIn("tempo", tail)
+        self.assertIn("norm", tail)
+
+
+class ChainsForEngineTest(unittest.TestCase):
+    def test_piper_returns_sox_chains(self):
+        self.assertIs(render.chains_for_engine("piper"), render.SOX_CHAINS)
+
+    def test_chatterbox_returns_clone_post_chains(self):
+        self.assertIs(render.chains_for_engine("chatterbox"), render.CLONE_POST_CHAINS)
+
+    def test_unknown_engine_raises(self):
+        with self.assertRaises(render.PipelineError):
+            render.chains_for_engine("nonsense")
+
+
+class RenderLineDispatchTest(unittest.TestCase):
+    """`render_line`'s own validation branches, all reachable without either backend's heavy
+    dependency (piper binary / chatterbox+torch) installed."""
+
+    def test_unknown_engine_raises(self):
+        with self.assertRaises(render.PipelineError):
+            render.render_line("nonsense", "trade_completed.1", "Traded! Nice.", Path("/tmp/out.ogg"), "deep")
+
+    def test_piper_without_model_raises(self):
+        with self.assertRaises(render.PipelineError):
+            render.render_line("piper", "trade_completed.1", "Traded! Nice.", Path("/tmp/out.ogg"), "deep")
+
+    def test_chatterbox_without_reference_raises(self):
+        with self.assertRaises(render.PipelineError):
+            render.render_line("chatterbox", "trade_completed.1", "Traded! Nice.", Path("/tmp/out.ogg"), "tail")
+
+
+class ReferenceSetsTest(unittest.TestCase):
+    """`reference.REFERENCE_SETS` — the three named reference sets round four samples against
+    (`AUDIO-DEC-006`)."""
+
+    def test_all_contains_every_clip_in_talking_and_idle(self):
+        self.assertTrue(set(reference.REFERENCE_SETS["talking"]) <= set(reference.REFERENCE_SETS["all"]))
+        self.assertTrue(set(reference.REFERENCE_SETS["idle"]) <= set(reference.REFERENCE_SETS["talking"]))
+
+    def test_idle_is_the_smallest_set(self):
+        sizes = {name: len(clips) for name, clips in reference.REFERENCE_SETS.items()}
+        self.assertEqual(min(sizes, key=sizes.get), "idle")
+
+    def test_no_duplicate_clips_within_a_set(self):
+        for name, clips in reference.REFERENCE_SETS.items():
+            self.assertEqual(len(clips), len(set(clips)), f"{name}: duplicate clip name")
+
+
+class AssetIndexResolutionTest(unittest.TestCase):
+    """Asset-index resolution against a fake fabric-loom asset cache (index JSON + `objects/`
+    layout), so this is testable without a real Minecraft client install."""
+
+    def _fake_assets_root(self, tmp: Path, clip_names=("idle1", "idle2")) -> tuple[Path, dict[str, str]]:
+        assets_root = tmp / "assets"
+        indexes_dir = assets_root / "indexes"
+        objects_dir = assets_root / "objects"
+        indexes_dir.mkdir(parents=True)
+        objects_dir.mkdir(parents=True)
+        objects = {}
+        for i, name in enumerate(clip_names):
+            clip_hash = f"{'a' * 38}{i:02d}"  # 40 hex-shaped chars, unique per clip
+            key = f"{reference.VANILLA_VILLAGER_PREFIX}{name}.ogg"
+            objects[key] = {"hash": clip_hash, "size": 1234}
+            obj_dir = objects_dir / clip_hash[:2]
+            obj_dir.mkdir(exist_ok=True)
+            (obj_dir / clip_hash).write_bytes(b"fake-ogg-bytes")
+        index_path = indexes_dir / "26.2-32.json"
+        index_path.write_text(json.dumps({"objects": objects}), encoding="utf-8")
+        return assets_root, {k: v["hash"] for k, v in objects.items()}
+
+    def test_load_asset_index(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, expected = self._fake_assets_root(Path(tmp))
+            index = reference.load_asset_index(assets_root / "indexes" / "26.2-32.json")
+            self.assertEqual(index, expected)
+
+    def test_find_default_asset_index_single_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, _ = self._fake_assets_root(Path(tmp))
+            found = reference.find_default_asset_index(assets_root)
+            self.assertEqual(found, assets_root / "indexes" / "26.2-32.json")
+
+    def test_find_default_asset_index_none_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root = Path(tmp) / "assets"
+            (assets_root / "indexes").mkdir(parents=True)
+            with self.assertRaises(reference.ReferenceError):
+                reference.find_default_asset_index(assets_root)
+
+    def test_find_default_asset_index_multiple_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, _ = self._fake_assets_root(Path(tmp))
+            (assets_root / "indexes" / "other.json").write_text("{}", encoding="utf-8")
+            with self.assertRaises(reference.ReferenceError):
+                reference.find_default_asset_index(assets_root)
+
+    def test_resolve_object_found(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, hashes = self._fake_assets_root(Path(tmp))
+            clip_hash = next(iter(hashes.values()))
+            path = reference.resolve_object(clip_hash, assets_root)
+            self.assertTrue(path.exists())
+            self.assertEqual(path.read_bytes(), b"fake-ogg-bytes")
+
+    def test_resolve_object_missing_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, _ = self._fake_assets_root(Path(tmp))
+            with self.assertRaises(reference.ReferenceError):
+                reference.resolve_object("f" * 40, assets_root)
+
+    def test_resolve_clips_in_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, hashes = self._fake_assets_root(Path(tmp), clip_names=("idle1", "idle2", "idle3"))
+            index = reference.load_asset_index(assets_root / "indexes" / "26.2-32.json")
+            paths = reference.resolve_clips(("idle3", "idle1"), index, assets_root)
+            self.assertEqual(len(paths), 2)
+            self.assertEqual(paths[0].name, hashes[f"{reference.VANILLA_VILLAGER_PREFIX}idle3.ogg"])
+            self.assertEqual(paths[1].name, hashes[f"{reference.VANILLA_VILLAGER_PREFIX}idle1.ogg"])
+
+    def test_resolve_clips_missing_clip_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, _ = self._fake_assets_root(Path(tmp), clip_names=("idle1",))
+            index = reference.load_asset_index(assets_root / "indexes" / "26.2-32.json")
+            with self.assertRaises(reference.ReferenceError):
+                reference.resolve_clips(("haggle1",), index, assets_root)
+
+    def test_build_named_reference_unknown_set_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_root, _ = self._fake_assets_root(Path(tmp))
+            with self.assertRaises(reference.ReferenceError):
+                reference.build_named_reference(
+                    "nonsense", Path(tmp) / "out.wav", Path(tmp) / "scratch",
+                    assets_root=assets_root, asset_index_path=assets_root / "indexes" / "26.2-32.json",
+                )
 
 
 if __name__ == "__main__":

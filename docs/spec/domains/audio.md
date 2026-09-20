@@ -63,9 +63,10 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
 
 | Step | Detail |
 |---|---|
-| Input | The line's own subtitle text, exactly as written — plain English, no scrambling or nonsense/CV-syllable transform. Round 1's nonsense-syllable input (this row's original text, kept below in history) produced an unintelligible sample; Kevin's own villager phrasing already carries the character ("Mrrgh", "Hmnh", "Ah", ...), so nothing is added on top (`AUDIO-DEC-004`). |
-| Generator | Piper TTS, the **frozen `rhasspy/piper` MIT snapshot** (archived, not the actively-maintained `OHF-Voice/piper1-gpl` GPL-3.0 fork) — build-time tool only, never shipped; ships only its output `.ogg` files (research §C). Which specific voice model, and that voice model's own licence, is **to verify at the first ticket** (research notes voice licences vary per-voice, "many MIT/CC0-ish," not a blanket claim); round 1's three candidates failed the timbre approval outright, so a second sample round is underway with the same three plus a naturally-lower-register male voice (`tools/voices/VOICES.md` has the licence record). |
-| Seed | Every generation call is seeded, so a given line's output is reproducible byte-for-byte from the same input text and seed. |
+| Input | The line's own subtitle text, exactly as written — plain English, no scrambling or nonsense/CV-syllable transform. Round 1's nonsense-syllable input (this row's original text, kept below in history) produced an unintelligible sample; Kevin's own villager phrasing already carries the character ("Mrrgh", "Hmnh", "Ah", ...), so nothing is added on top (`AUDIO-DEC-004`). VV-18 later split the written grunt out of the subtitle into its own `grunt` catalogue field (`AUDIO-REQ-007`), so from that point on this row's "as written" is already grunt-free for every line, not just the sample slice round 3 hand-overrode. |
+| Generator | **`chatterbox`, a zero-shot voice-cloning TTS (Resemble AI, MIT code + MIT weights), conditioned on a reference WAV built from vanilla's own villager grunt clips** — the primary engine as of round four (`AUDIO-DEC-006`). `piper` (the frozen `rhasspy/piper` MIT snapshot, archived, not the actively-maintained `OHF-Voice/piper1-gpl` GPL-3.0 fork) is kept as the fallback engine, rounds 1–3's work untouched (`tools/voices/render.py --engine piper`, still the default flag value for backward compatibility). Both are build-time tools only, never shipped; only their output `.ogg` files ship (research §C, `COMP-REQ-001`). |
+| Reference (clone engine only) | A single WAV concatenating a chosen set of vanilla villager clips (`idle`/`haggle`/`yes`/`no`/`hit`, no separate trade/work clips exist) with 150ms silence between each, normalized, resolved from the client's own asset cache at generation time (`~/.gradle/caches/fabric-loom/assets/`) and never bundled, committed, or copied into the repo or a deliverable (`COMP-REQ-002`, `tools/voices/reference.py`). Three named sets tried in round four's samples: `all` (every clip), `talking` (idle+haggle+yes only), `idle` (idle only) — `tools/voices/VOICES.md` "Round 4" has the sample table and f0 comparison. |
+| Seed | Every generation call is seeded, so a given line's output is reproducible byte-for-byte from the same input text and seed. Piper has no native `--seed` flag (`noise_scale`/`noise_w` pinned to 0 instead, see `tools/voices/README.md` "Determinism"); Chatterbox accepts a torch seed directly, set deterministically per line from a hash of the line id (`render.derive_seed`) so no seed table needs hand-maintaining. |
 | Pitch/tempo | A fixed sox chain applied uniformly to the whole batch, retuned after round 1's sample failed intelligibility (`AUDIO-DEC-004`): pitch shifted **down**, never up, for a deep register; a nasal band boost; dulled highs; a touch less low end so "dull" doesn't read as "boomy"; loudness normalized last — `sox in.wav -r 44100 -c 1 out.ogg pitch {-300|-500} equalizer 1600 1.2q +9 treble -10 4000 lowpass 5000 bass -4 tempo 0.95 norm -3`. Two depths are in round 2's sample (`-300` "deep", `-500` "deeper"); the batch runs at whichever Kevin approves. Round 1's chain was `pitch 500 tempo 0.92` (+5 semitones **up**) — the opposite direction, and part of why the sample was unintelligible. |
 | Timbre approval | Kevin approves the timbre from a small sample batch **before** the full 64-line batch runs (`rulings-2026-09-20.md`) — a manual gate, not automated. |
 | Output format | Mono OGG Vorbis, 44.1kHz, 16-bit, ~Vorbis quality 5 (~160kbps) — matches vanilla asset convention; a 1–2s line runs roughly 15–40KB (research §B5). |
@@ -100,13 +101,16 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
 
 | Question | Blocks | Decided by |
 |---|---|---|
-| The exact pitch depth for Norman, measured against vanilla's villager ambient clips (between 0 and -300 cents) | the batch | round 3 (`AUDIO-DEC-005`), Kevin's listen; the model itself is decided: `en_US-norman-medium` |
+| Which reference set (`all`/`talking`/`idle`), settings (exaggeration/cfg_weight), and post-processing chain (`tail`/`none`) for the clone engine | the batch | round four's samples (`tools/voices/VOICES.md` "Round 4"), Kevin's listen — the engine itself is decided: Chatterbox (`AUDIO-DEC-006`) |
 
 Resolved, kept for history: the input-text question (`AUDIO-REQ-006`) — it is the subtitle verbatim,
 not a distinct nonsense string (`AUDIO-DEC-004`, reversing §3 "Input"'s original proposal).
 `SoundSource.NEUTRAL` vs. `VOICE` — settled as `NEUTRAL` in `fabric`'s
 `ReactionSoundPlayer.java` (`VV-8`); this sheet's §3 "Playing server-side" already recorded the
-reasoning, this row only confirms code matches it.
+reasoning, this row only confirms code matches it. The exact Piper pitch depth for Norman
+(round 3, `AUDIO-DEC-005`) — superseded by round four's engine change (`AUDIO-DEC-006`); Piper stays
+wired up as the fallback engine at round 3's own settings if the clone engine is ever abandoned, but
+nothing further tunes its pitch depth while it isn't the active engine.
 
 ## 8. Decisions
 
@@ -157,3 +161,36 @@ reasoning, this row only confirms code matches it.
   audio is never bundled (`COMP-REQ-002`): the reference is by sound event id, resolved on the
   client from its own assets. **Cost if wrong:** one optional catalogue field, one delayed play in
   the sound player, and a regenerated batch; the placeholder path (`AUDIO-DEC-001`) is untouched.
+- `AUDIO-DEC-006` — **Clone the villager's own voice: a permissively licensed zero-shot cloning TTS,
+  conditioned on the vanilla villager's grunt clips as the cloning reference; Piper kept as the
+  fallback engine.** Decided by Kevin, 2026-09-20, on hearing round 3's pitch-matched Norman: "still
+  not good, can't we actually use the villager's voice?" — three Piper rounds (nonsense syllables;
+  plain English on four voices pitched down; Norman pitched all the way up to vanilla's own measured
+  118.5Hz) were each rejected in turn, and pitch-shifting a human-recorded voice dataset was never
+  going to land on the villager's actual (synthetic, sample-based) timbre no matter how precisely
+  the fundamental was matched — a different kind of engine was the only way to actually answer the
+  request. Chatterbox (Resemble AI) is the pick: MIT-licensed code
+  (<https://github.com/resemble-ai/chatterbox>) and MIT-licensed weights
+  (<https://huggingface.co/ResembleAI/chatterbox>), both verified directly (`gh api`/model-card
+  metadata, not taken on trust) before installing anything, satisfying `AUDIO-REQ-004`'s hard
+  exclusion of non-commercial-licensed model output (XTTS/CPML, Fish Speech, F5-TTS weights were
+  never candidates for exactly this reason). The cloning reference is built from vanilla's own
+  `idle`/`haggle`/`yes`/`no`/`hit` clips, concatenated with silence between and normalized, read from
+  the client's own asset cache at generation time — never bundled, committed, or copied anywhere
+  persistent (`COMP-REQ-002`, `tools/voices/reference.py`). Piper (rounds 1–3, `AUDIO-DEC-002`–
+  `005`) is not removed: it stays the pipeline's fallback engine, `--engine piper` still the default
+  flag value, in case the clone engine's output doesn't hold up at the full 64-line batch scale or a
+  future Minecraft version's villager audio changes enough to need re-cloning against a different
+  reference. **Legal note, recorded as a known grey zone rather than resolved outright**: the
+  rendered output is a new synthesis conditioned on Mojang's own audio, not a copy of it — comparable
+  to a human voice actor doing an impression of a character after listening to it, which is
+  generally understood not to infringe the original recording's copyright on its own. `AUDIO-REQ-004`
+  and `COMP-REQ-002`'s existing mitigation already covers the sharper edge of this: no Mojang sample,
+  reference WAV, or preview file is ever distributed — only the mod's own rendered `.ogg` output,
+  built from a reference that is itself never shipped, committed, or reachable outside the machine
+  that generated it. This is not a substitute for actual legal review if the mod's distribution scale
+  or visibility changes meaningfully; it is the considered call for an alpha/1.0 hobby release under
+  the mod's existing compliance posture. **Cost if wrong:** regenerate the batch against Piper
+  instead (a rerun of already-decided, already-tuned settings, `AUDIO-DEC-002`–`005`), or drop the
+  cloning reference to a synthetic/non-Mojang source and re-render — neither touches the placeholder
+  path (`AUDIO-DEC-001`) or the registration/catalogue format (`AUDIO-REQ-003`).

@@ -148,5 +148,42 @@ committed).
 
 Round 3 also drops the written grunt from the three sample lines' TTS input ("Mrrgh — traded!
 Nice." → "Traded! Nice.") since the game now plays the vanilla grunt itself
-(`AUDIO-REQ-007`, VV-18) — `SAMPLE_TEXT_OVERRIDES` in `render.py`, sample-round-only for now (the
-general 64-line grunt-stripping rule is still undecided).
+(`AUDIO-REQ-007`, VV-18) — `SAMPLE_TEXT_OVERRIDES` in `render.py`, sample-round-only for the time
+being. VV-18 later changed the catalogue itself to words-only subtitles plus a separate `grunt`
+field, making that override equal to the catalogue's own subtitle for all three sample lines; round
+four (`AUDIO-DEC-006`) removes it as dead weight rather than keep a no-op override around.
+
+## Round 4: cloning the villager's own voice (`AUDIO-DEC-006`)
+
+See `docs/spec/domains/audio.md` `AUDIO-DEC-006` for the full decision. Engine and weights licence
+findings:
+
+* **Chatterbox** (Resemble AI) — code: `resemble-ai/chatterbox` on GitHub, **MIT**
+  (`LICENSE` at <https://github.com/resemble-ai/chatterbox/blob/master/LICENSE>, confirmed via
+  `gh api repos/resemble-ai/chatterbox` — `license.spdx_id: MIT`, not archived). Weights: the
+  `ResembleAI/chatterbox` Hugging Face repository, model card declares **MIT**
+  (<https://huggingface.co/ResembleAI/chatterbox>, "License: mit"). Both layers permissive —
+  `AUDIO-REQ-004`'s hard-excludes (non-commercial models, System Voices, Freesound CC-BY-NC) do not
+  apply.
+* PyPI package `chatterbox-tts==0.1.7`, `requires_python >=3.10`; pins `torch==2.6.0`/
+  `torchaudio==2.6.0` for `python_version < "3.14"` (and `>=2.9.0` for 3.14+, untested here). Runs
+  CPU-only on Apple Silicon (arm64) fine — no CUDA/MPS requirement, verified deterministic
+  (identical MD5 output across two runs of the same seed/text/reference on CPU).
+* Installed in an isolated venv, `tools/voices/.venv-clone/`, Python 3.11.15 (via `uv python`,
+  gitignored, reproducible via `tools/voices/setup.py --clone`/README). One install wrinkle:
+  `resemble-perth` (Chatterbox's audio watermarker dependency) imports `pkg_resources`, which
+  newer `setuptools` (81+) no longer ships — pin `setuptools<81` in the venv or the watermarker
+  silently degrades to `None` (`perth`'s own `except ImportError: PerthImplicitWatermarker = None`,
+  no error surfaced until `ChatterboxTTS.from_pretrained` crashes constructing it).
+* Piper (round 1–3, `AUDIO-DEC-002`–`005`) stays wired up as the fallback engine — `--engine piper`
+  is still `render.py`'s default, unchanged.
+
+Reference-set builder: `tools/voices/reference.py`, the first committed version of the asset-index
+resolution logic round 3's f0-measurement script used ad-hoc (never itself committed). Three named
+sets tried for round four (`REFERENCE_SETS`): `all` (idle1-3, haggle1-3, yes1-3, no1-3, hit1-4 — no
+separate trade/work clips exist; `haggle` already established as vanilla's own trade sound, "Round
+3" above), `talking` (idle+haggle+yes only), `idle` (idle1-3 only). Built with 150ms silence between
+clips, `norm -3`.
+
+Sample round four's files, f0 table, and Kevin's own ranking-from-spectra are in
+`voices-samples-4/README.md` (scratchpad, not committed) and the VV-11 round-four report.
