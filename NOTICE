@@ -5,11 +5,28 @@ It runs on and is built against:
 - Minecraft (Mojang): this mod adds no block, item, or entity of its own at this stage; no Mojang
   asset (texture, model, or sound) is copied.
 
-Nothing else is bundled yet. Piper (voice synthesis, build-time only, never invoked at runtime) and
-its voice model will be added and credited here once audio lands (`docs/spec/domains/audio.md`);
-that credit will also disclose the shipped audio as AI-generated
-(`docs/spec/operations/compliance.md`). NeoForge's own credit is added once its module lands and its
-licence is verified (`docs/spec/operations/compliance.md`).
+Piper TTS (github.com/rhasspy/piper, archived, MIT — the frozen snapshot, not the actively
+maintained GPL-3.0 `OHF-Voice/piper1-gpl` fork) generates the villager voice lines: a build-time
+tool only, never invoked, bundled, or reachable at runtime (`docs/spec/domains/audio.md`
+`AUDIO-REQ-005`). Candidate voice models under evaluation for the timbre sample round
+(`tools/voices/VOICES.md` has the full licence record):
+- `en_US-joe-medium` (dataset: OHF-Voice/voice-datasets), CC0.
+- `en_US-kristin-medium` (dataset: LibriVox), public domain.
+- `en_US-norman-medium` (dataset: LibriVox), public domain.
+
+Once Kevin approves a sample timbre and the full 64-line batch replaces the placeholder audio, this
+credit narrows to the one approved model and this notice discloses the shipped audio as
+AI-generated (`docs/spec/operations/compliance.md`, `REL-REQ-004`). NeoForge's own credit is added
+once its module lands and its licence is verified (`docs/spec/operations/compliance.md`).
+The alpha's 64 shipped sound files are build-generated near-silent placeholder audio (a very soft
+click, not true digital silence, `docs/spec/domains/audio.md` `AUDIO-REQ-002`) — not speech, not
+AI-generated, and not sourced from anywhere: nothing here is a disclosure obligation yet
+(`docs/spec/operations/release.md` `REL-REQ-004`). Piper (voice synthesis, build-time only, never
+invoked at runtime) and its voice model will be added and credited here once real audio lands
+(`VV-11`, `docs/spec/domains/audio.md`); that credit will also disclose the shipped audio as
+AI-generated from that release onward (`docs/spec/operations/compliance.md`). NeoForge's own
+credit is added once its module lands and its licence is verified
+(`docs/spec/operations/compliance.md`).
 
 All shipped line text and audio are original to this project, never third-party content
 (`docs/spec/decisions/DEC-003-licence.md`).

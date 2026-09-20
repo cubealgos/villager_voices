@@ -16,3 +16,7 @@ dist/
 
 # macOS Finder droppings
 .DS_Store
+
+# The Piper binary, voice models, and local sample renders (tools/voices/README.md) — fetched by
+# tools/voices/setup.py, never committed.
+tools/voices/.cache/
