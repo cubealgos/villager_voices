@@ -39,6 +39,21 @@ client:
 spec-sync:
     rsync -a --delete "{{vault_spec}}/" docs/spec/
 
+# Fetch the frozen Piper binary and the candidate voice models (tools/voices/VOICES.md), once per
+# machine.
+voices-setup:
+    python3 tools/voices/setup.py
+
+# 3 lines x each candidate voice model, for Kevin's timbre approval before the full batch
+# (tools/voices/README.md; docs/spec/domains/audio.md AUDIO-FAIL-003). Never touches shipped assets.
+voices-sample:
+    python3 tools/voices/render.py --sample
+
+# All 64 lines against one approved voice model, replacing the shipped placeholder .ogg files and
+# rewriting sounds.json (AUDIO-REQ-003). Do not run before Kevin has approved a sample timbre.
+voices-batch MODEL:
+    python3 tools/voices/render.py --batch --model {{MODEL}}
+
 # The Modrinth icon: no generator exists yet (no design has been decided,
 # docs/spec/README.md "Open questions gathered"). Render it by hand and place it at
 # docs/modrinth/icon.png once the icon itself is designed.
