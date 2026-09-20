@@ -18,6 +18,15 @@ Once Kevin approves a sample timbre and the full 64-line batch replaces the plac
 credit narrows to the one approved model and this notice discloses the shipped audio as
 AI-generated (`docs/spec/operations/compliance.md`, `REL-REQ-004`). NeoForge's own credit is added
 once its module lands and its licence is verified (`docs/spec/operations/compliance.md`).
+The alpha's 64 shipped sound files are build-generated near-silent placeholder audio (a very soft
+click, not true digital silence, `docs/spec/domains/audio.md` `AUDIO-REQ-002`) — not speech, not
+AI-generated, and not sourced from anywhere: nothing here is a disclosure obligation yet
+(`docs/spec/operations/release.md` `REL-REQ-004`). Piper (voice synthesis, build-time only, never
+invoked at runtime) and its voice model will be added and credited here once real audio lands
+(`VV-11`, `docs/spec/domains/audio.md`); that credit will also disclose the shipped audio as
+AI-generated from that release onward (`docs/spec/operations/compliance.md`). NeoForge's own
+credit is added once its module lands and its licence is verified
+(`docs/spec/operations/compliance.md`).
 
 All shipped line text and audio are original to this project, never third-party content
 (`docs/spec/decisions/DEC-003-licence.md`).
