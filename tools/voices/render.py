@@ -51,12 +51,14 @@ MODELS_DIR = CACHE_DIR / "models"
 # rejected outright as unintelligible; round 2 sampled "deep"/"deeper" (round 1's holdovers, kept
 # here for history and regenerability, `AUDIO-REQ-006`); Kevin's round-2 verdict on `en_US-norman-
 # medium`, the one model that survived: "a little less deep... try the pitch of the normal villager
-# sound." Round 3 measures vanilla's own median f0 (`tools/voices/VOICES.md`) and finds it *above*
-# Norman's natural (unshifted) pitch, not below it — so landing on it would mean pitching **up**,
-# reversing `AUDIO-DEC-004`'s "never up" by design. `villager_match` (the measured match, `pitch 0`
-# — i.e. no shift) and `villager_above` (`pitch 100`, deliberately testing that reversal) are
-# offered alongside `villager_below` (`pitch -100`, still on the "less deep" side Kevin asked for)
-# for his listen — none of the three is a foregone conclusion.
+# sound." Round 3 measures vanilla's own median f0 (`tools/voices/VOICES.md`, 118.5 Hz) and finds it
+# *above* Norman's natural (unshifted) pitch, not below it — so landing on it means pitching **up**,
+# reversing `AUDIO-DEC-004`'s "never up" — a deliberate, named exception decided here specifically
+# so Kevin can hear the vanilla-matched pitch rather than read about it, not a silent reversal of
+# the default: `villager_below`/`villager_match`/`villager_above` (`pitch -100`/`0`/`100`) explore a
+# small step either side of Norman's own pitch, and `villager_up_250`/`villager_up_400`/
+# `villager_vanilla` (`pitch 250`/`400`/`490`, the last being the measured match) push further, all
+# the way to vanilla itself, to see where intelligibility holds up.
 SOX_FORMAT_ARGS = ["-r", "44100", "-c", "1", "-C", "5"]  # 44.1kHz mono, ~Vorbis quality 5
 _NASAL_DULL_TAIL = [
     "equalizer", "1600", "1.2q", "+9",  # nasal band boost
@@ -66,12 +68,27 @@ _NASAL_DULL_TAIL = [
     "tempo", "0.95",
     "norm", "-3",  # consistent loudness
 ]
+# Same tail, minus the tempo step — for `villager_vanilla_no_tempo`, to isolate whether `tempo
+# 0.95` compounds any chirp/artifact from the extreme +490-cent shift (pitch is time-preserving and
+# formant-preserving on its own; stacking a second time-domain effect on top of a large shift is
+# where that risk lives).
+_NASAL_DULL_TAIL_NO_TEMPO = [
+    "equalizer", "1600", "1.2q", "+9",
+    "treble", "-10", "4000",
+    "lowpass", "5000",
+    "bass", "-4",
+    "norm", "-3",
+]
 SOX_CHAINS = {
     "deep": ["pitch", "-300", *_NASAL_DULL_TAIL],
     "deeper": ["pitch", "-500", *_NASAL_DULL_TAIL],
     "villager_below": ["pitch", "-100", *_NASAL_DULL_TAIL],
     "villager_match": ["pitch", "0", *_NASAL_DULL_TAIL],
     "villager_above": ["pitch", "100", *_NASAL_DULL_TAIL],
+    "villager_up_250": ["pitch", "250", *_NASAL_DULL_TAIL],
+    "villager_up_400": ["pitch", "400", *_NASAL_DULL_TAIL],
+    "villager_vanilla": ["pitch", "490", *_NASAL_DULL_TAIL],
+    "villager_vanilla_no_tempo": ["pitch", "490", *_NASAL_DULL_TAIL_NO_TEMPO],
 }
 
 # Piper synthesis parameters, fixed uniformly across every line (see "Determinism" in

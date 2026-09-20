@@ -109,22 +109,42 @@ chain at all) on the three round-3 lines, grunt removed ("Traded! Nice.", "That 
 86.1 / 95.0 / 86.5 Hz — already **below** vanilla's 118.5 Hz median. Sweeping `sox pitch {0, -100,
 -200, -300}` on the same dry output only moves it further away (86–95 Hz at `0`, down to 77–82 Hz
 at `-300`) — pitching *down* from here, which is what round 2's `-300`/`-500` did, moves away from
-vanilla, not toward it. **Landing exactly on vanilla's median would mean pitching *up* roughly
-+490 cents from Norman's natural voice** — far outside the ±100-cent window explored below, and a
-reversal of `AUDIO-DEC-004`'s "never up," so not attempted; the three chains below explore a small,
-bounded step in that direction instead, for Kevin's listen, not a claim that any of them matches
-vanilla exactly.
+vanilla, not toward it. **Landing exactly on vanilla's median means pitching *up* roughly +490
+cents from Norman's natural voice** — a reversal of `AUDIO-DEC-004`'s "never up." Kevin's response
+to that finding: "render it for real" — so round 3 goes all the way there, not just partway.
 
-Round 3's three named `SOX_CHAINS` (Norman only, full nasal/dull/loudness tail, measured on the
-actual rendered output):
+Round 3's seven named `SOX_CHAINS` (Norman only, full nasal/dull/loudness tail except
+`villager_vanilla_no_tempo`, measured on the actual rendered output, 3-line average):
 
-| Chain | `pitch` (cents) | Measured median f0 (3-line avg) | Vanilla reference |
-|---|---|---|---|
-| `villager_below` | -100 | 84.7 Hz | 118.5 Hz |
-| `villager_match` | 0 (Norman's natural pitch — the closest of the four originally-swept values to vanilla, not an exact match) | 90.0 Hz | 118.5 Hz |
-| `villager_above` | +100 | 92.0 Hz | 118.5 Hz |
+| Chain | `pitch` (cents) | Measured median f0 (3-line avg) | Vanilla reference | Gap |
+|---|---|---|---|---|
+| `villager_below` | -100 | 84.7 Hz | 118.5 Hz | -33.8 Hz |
+| `villager_match` | 0 (Norman's natural pitch) | 90.0 Hz | 118.5 Hz | -28.5 Hz |
+| `villager_above` | +100 | 92.0 Hz | 118.5 Hz | -26.5 Hz |
+| `villager_up_250` | +250 | 99.3 Hz | 118.5 Hz | -19.2 Hz |
+| `villager_up_400` | +400 | 108.8 Hz | 118.5 Hz | -9.7 Hz |
+| `villager_vanilla` | +490 (the measured match) | 112.1 Hz | 118.5 Hz | -6.4 Hz |
+| `villager_vanilla_no_tempo` | +490, tempo step dropped | 113.8 Hz | 118.5 Hz | -4.7 Hz |
 
-Per-line detail in `voices-samples-3/README.md` (scratchpad, not committed).
+None lands exactly on 118.5 Hz — autocorrelation on short, noisy TTS/vanilla-clip audio isn't
+lab-grade precision, and `villager_vanilla`/`villager_vanilla_no_tempo` are within a semitone-ish of
+it, the closest of the seven, as expected.
+
+**Intelligibility/chirp check at the extreme end** (objective proxy only, not a substitute for a
+listen — Kevin's call, not this tool's): frame-to-frame pitch-lock rate does not degrade going up —
+it *improves* (80% of voiced frames pitch-locked at `villager_below`/`match`/`above`, 90.6% at
+`villager_vanilla`) and estimates get less erratic (coefficient of variation 67%→45%); no clipping
+(`sox stat` max amplitude 0.72 of full scale, both with and without the tempo step). This doesn't
+prove `villager_vanilla` doesn't chirp — periodicity-lock can't hear a metallic/robotic timbre — it
+only means the checks available here found no red flag. `villager_vanilla_no_tempo` (same +490
+cents, `tempo 0.95` dropped) measures almost identically (114.2 Hz vs. 114.2 Hz on
+`trade_completed.1`; 118.0 Hz vs. 114.2 Hz on `hurt.2`) and runs ~5% shorter, as expected without
+the tempo stretch — if `villager_vanilla` does chirp on a listen, this isolates whether `tempo
+0.95` is the cause.
+
+Per-line detail, the preview files (vanilla grunt spliced in for listening context, never
+committed), and per-chain durations/RMS are in `voices-samples-3/README.md` (scratchpad, not
+committed).
 
 Round 3 also drops the written grunt from the three sample lines' TTS input ("Mrrgh — traded!
 Nice." → "Traded! Nice.") since the game now plays the vanilla grunt itself

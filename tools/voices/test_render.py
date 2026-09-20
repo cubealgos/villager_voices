@@ -36,11 +36,13 @@ class DeriveInputTextTest(unittest.TestCase):
 
 class SoxChainsTest(unittest.TestCase):
     """Round 1's `pitch 500` (way up, paired with scrambled input text) was rejected outright
-    (`AUDIO-DEC-004`). Round 3 deliberately tests a small pitch-up again (`villager_above`,
-    `AUDIO-DEC-005`) — vanilla's own measured median f0 sits *above* `en_US-norman-medium`'s
-    natural pitch, not below it, so landing on it means going up — but only a modest +100 cents,
-    only as one of three explicitly-named `villager_*` sample chains for Kevin's listen, never as
-    a silent change to the pipeline's default direction."""
+    (`AUDIO-DEC-004`). Round 3 deliberately tests pitching up again — vanilla's own measured median
+    f0 sits *above* `en_US-norman-medium`'s natural pitch, not below it, so landing on it (`pitch
+    490`, `villager_vanilla`) means going up, all the way to the measured match, plus two waypoints
+    on the way there (`villager_up_250`/`villager_up_400`) and a smaller step
+    (`villager_below`/`villager_match`/`villager_above`, `-100`/`0`/`100`) — every one of them a
+    named, explicit `villager_*` exception decided here specifically so Kevin can hear it, never a
+    silent change to the pipeline's default direction."""
 
     def test_every_chain_starts_with_a_pitch_effect(self):
         for name, args in render.SOX_CHAINS.items():
@@ -49,7 +51,7 @@ class SoxChainsTest(unittest.TestCase):
     def test_pitch_is_within_the_explored_range(self):
         for name, args in render.SOX_CHAINS.items():
             cents = int(args[1])
-            self.assertTrue(-500 <= cents <= 100, f"{name}: pitch {cents} outside the explored range")
+            self.assertTrue(-500 <= cents <= 490, f"{name}: pitch {cents} outside the explored range")
 
     def test_only_named_villager_chains_pitch_up_or_flat(self):
         for name, args in render.SOX_CHAINS.items():
@@ -57,9 +59,17 @@ class SoxChainsTest(unittest.TestCase):
             if cents >= 0:
                 self.assertTrue(name.startswith("villager_"), f"{name}: pitch {cents} is up/flat but not a named villager_* chain")
 
-    def test_every_chain_shares_the_same_tail_after_pitch(self):
-        tails = {tuple(args[2:]) for args in render.SOX_CHAINS.values()}
-        self.assertEqual(len(tails), 1, "every chain should share the same nasal/dull/loudness tail")
+    def test_every_chain_shares_the_same_tail_after_pitch_except_the_named_no_tempo_variant(self):
+        tails = {name: tuple(args[2:]) for name, args in render.SOX_CHAINS.items() if name != "villager_vanilla_no_tempo"}
+        self.assertEqual(len(set(tails.values())), 1, "every chain but villager_vanilla_no_tempo should share the same tail")
+
+    def test_villager_vanilla_no_tempo_matches_its_tempo_sibling_minus_tempo(self):
+        with_tempo = render.SOX_CHAINS["villager_vanilla"]
+        without_tempo = render.SOX_CHAINS["villager_vanilla_no_tempo"]
+        self.assertEqual(with_tempo[1], without_tempo[1], "both should shift pitch by the same amount")
+        self.assertNotIn("tempo", without_tempo)
+        expected = [arg for arg in with_tempo[2:] if arg not in ("tempo", "0.95")]
+        self.assertEqual(without_tempo[2:], expected)
 
     def test_deep_and_deeper_share_everything_but_the_pitch_depth(self):
         self.assertEqual(render.SOX_CHAINS["deep"][2:], render.SOX_CHAINS["deeper"][2:])
