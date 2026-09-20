@@ -1,5 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.1+26.2-fabric
 
+The first alpha: villagers react to what happens to them, with a line above your hotbar and a
+vanilla subtitle behind it. Fabric, Minecraft 26.2, Fabric Loader ≥0.19.5, Fabric API
+0.161.0+26.2.
+
+- All 16 trigger events: `trade_completed`, `offer_opened`, `hurt`, `killed`, `zombified`,
+  `cured`, `level_up`, `restock`, `sleep`, `wake`, `raid_bell`, `golem_summoned`, `panic`,
+  `player_staring`, `breeding`, `baby_grows` (VV-2, VV-4, VV-5, VV-6).
+- The 64-line data-driven catalogue, four lines per event, each with its own registered sound
+  event and subtitle, overridable per event by a datapack (VV-3).
+- The per-player action-bar queue and display format (VV-7), and the near-silent placeholder
+  sound events every line plays through today, backing a real vanilla subtitle from day one
+  (VV-8).
+- `config/villager_voices.json`, written with shipped defaults on first launch: cooldowns of 60s
+  per villager per event, 5s per villager overall, and 2s per player server-wide; the action bar
+  on by default; a 1.5s (30-tick) minimum display hold; a 16-block hearing range; and a
+  1.0 master volume multiplier. The per-category mute toggles and the subtitle-hint toggle
+  round-trip in the file but are not yet wired to any behaviour.
+- No recorded audio yet: every line's sound is a genuine, valid, near-silent placeholder — the
+  registration/subtitle/playback path is fully live, real voice lines are a later drop-in with no
+  code change. Not AI-generated content; no disclosure is due yet (`REL-REQ-004`).
 - Bootstrap: `common`/`fabric` module split, CI, docs (VV-1).

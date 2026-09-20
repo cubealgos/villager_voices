@@ -39,11 +39,10 @@ client:
 spec-sync:
     rsync -a --delete "{{vault_spec}}/" docs/spec/
 
-# The Modrinth icon: no generator exists yet (no design has been decided,
-# docs/spec/README.md "Open questions gathered"). Render it by hand and place it at
-# docs/modrinth/icon.png once the icon itself is designed.
+# The Modrinth icon: this mod's own parchment-and-speech-bubble badge (tools/icon.py), not the
+# cubealgos Create-family navy one -- villager_voices is not a Create Fly add-on.
 icon:
-    @echo "icon: no generator yet -- the icon itself is an open design question (docs/spec/README.md); place docs/modrinth/icon.png by hand once decided"
+    python3 tools/icon.py
 
 # Regenerate docs/map.md and docs/map/ from the source.
 map:
