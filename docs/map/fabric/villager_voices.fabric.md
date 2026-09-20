@@ -15,5 +15,6 @@ The mod's server-and-common entrypoint.
 - `Logger LOGGER`
 - `DisplayQueue displayQueue()` — The currently live per-player action-bar queue (docs/spec/domains/display.md §3).
 - `VillagerEventBus eventBus()` — The currently live reaction pipeline (docs/spec/domains/reaction.md).
+- `TickScheduler tickScheduler()` — The mod's one grunt-then-line delay scheduler (VV-18).
 - `void onInitialize()`
 

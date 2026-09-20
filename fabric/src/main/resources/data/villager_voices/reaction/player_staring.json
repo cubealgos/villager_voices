@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Mrgh... can I help you?",
-      "sound": "villager_voices:reaction.player_staring.1"
+      "subtitle": "Can I help you?",
+      "sound": "villager_voices:reaction.player_staring.1",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Hmm, something the matter?",
-      "sound": "villager_voices:reaction.player_staring.2"
+      "sound": "villager_voices:reaction.player_staring.2",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Ah, personal space, please.",
-      "sound": "villager_voices:reaction.player_staring.3"
+      "sound": "villager_voices:reaction.player_staring.3",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Mmh, yes?",
-      "sound": "villager_voices:reaction.player_staring.4"
+      "subtitle": "Yes?",
+      "sound": "villager_voices:reaction.player_staring.4",
+      "grunt": "minecraft:entity.villager.ambient"
     }
   ]
 }

@@ -37,5 +37,5 @@ The server-authoritative half of VV-12's talking-state sync (docs/spec/domains/c
 - `TalkingStateSync()` — Production wiring: sends for real, via Fabric's own S2C networking API.
 - `TalkingStateSync(TalkingPayloadSender sender)`
 - `TalkingState talkingState()` — The server's own authoritative instance — queryable directly by a test, never by a client.
-- `void markTalking(MinecraftServer server, ServerLevel level, UUID villagerId, Vec3 pos, Set<UUID> playerIds, Config config, long now)` — Marks villagerId talking through now + config.talkingDurationTicks() and sends TalkingPayload to every player in playerIds within hearing range of pos in level.
+- `void markTalking(MinecraftServer server, ServerLevel level, UUID villagerId, Vec3 pos, Set<UUID> playerIds, Config config, long now, long extraTicks)` — Marks villagerId talking through now + config.talkingDurationTicks() + extraTicks and sends TalkingPayload to every player in playerIds within hearing range of pos in level.
 

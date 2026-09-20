@@ -44,19 +44,24 @@ public final class TalkingStateSync {
     }
 
     /**
-     * Marks {@code villagerId} talking through {@code now + config.talkingDurationTicks()} and
-     * sends {@link TalkingPayload} to every player in {@code playerIds} within hearing range of
-     * {@code pos} in {@code level}.
+     * Marks {@code villagerId} talking through
+     * {@code now + config.talkingDurationTicks() + extraTicks} and sends {@link TalkingPayload} to
+     * every player in {@code playerIds} within hearing range of {@code pos} in {@code level}.
      *
      * @param playerIds the sink's own candidate set (already server-wide-rate-limited, VV-2's
      *     {@code LineSink} contract) — narrowed here to hearing range, independent of the
      *     action-bar's own {@code display.actionBar}-gated narrowing
      * @param now the current server tick ({@code MinecraftServer#getTickCount()}), the same clock
      *     {@code FabricLineSink}'s own caller already has
+     * @param extraTicks additional ticks to extend the mark by, beyond
+     *     {@code config.talkingDurationTicks()} — VV-18's own grunt delay
+     *     ({@code villager_voices.fabric.sound.ReactionSoundPlayer#delayTicksFor}), so the talking
+     *     state spans grunt plus line rather than expiring mid-grunt; {@code 0} for a line with no
+     *     grunt, unchanged from before this ticket
      */
     public void markTalking(MinecraftServer server, ServerLevel level, UUID villagerId, Vec3 pos,
-            Set<UUID> playerIds, Config config, long now) {
-        long durationTicks = config.talkingDurationTicks();
+            Set<UUID> playerIds, Config config, long now, long extraTicks) {
+        long durationTicks = config.talkingDurationTicks() + extraTicks;
         talkingState.startTalking(villagerId, now + durationTicks);
 
         TalkingPayload payload = new TalkingPayload(villagerId, (int) durationTicks);

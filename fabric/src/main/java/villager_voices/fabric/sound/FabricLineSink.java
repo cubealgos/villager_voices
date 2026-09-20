@@ -38,6 +38,13 @@ import java.util.UUID;
  * <p>Also marks the villager talking for the sound's own duration and syncs that to nearby players
  * (VV-12, docs/spec/domains/compat.md {@code COMPAT-REQ-002}), via {@link TalkingStateSync} — kept
  * as a separate collaborator, not this class's own concern beyond the one call below.
+ *
+ * <p>VV-18 ({@code AUDIO-REQ-007}): a catalogue line may also carry a {@code grunt}, resolved here
+ * from the same catalogue lookup as the subtitle text and handed to {@link ReactionSoundPlayer},
+ * which plays it first and schedules the line's own sound after it
+ * ({@link villager_voices.fabric.VillagerVoicesFabric#tickScheduler()}). The talking state's own
+ * duration is extended by the same grunt delay ({@link ReactionSoundPlayer#delayTicksFor}), so the
+ * EMF talking indicator spans grunt plus line, never just the line.
  */
 public final class FabricLineSink implements LineSink {
 
@@ -74,7 +81,9 @@ public final class FabricLineSink implements LineSink {
             return;
         }
         Vec3 pos = entity.position();
-        String text = subtitleTextOf(line);
+        Line catalogueLine = catalogueLineOf(line);
+        String text = catalogueLine != null ? catalogueLine.text() : line.id();
+        String grunt = catalogueLine != null ? catalogueLine.grunt() : null;
         String speakerLabel = speakerLabelOf(entity);
 
         if (config.displayActionBar() && !playerIds.isEmpty()) {
@@ -92,25 +101,30 @@ public final class FabricLineSink implements LineSink {
             }
         }
 
+        long now = server.getTickCount();
         ReactionSoundPlayer.play(level, pos, line.id(),
-                (float) (BASE_VOLUME * config.displayMasterVolume()), BASE_PITCH);
+                (float) (BASE_VOLUME * config.displayMasterVolume()), BASE_PITCH,
+                grunt, now, VillagerVoicesFabric.tickScheduler());
 
-        talkingStateSync.markTalking(server, level, villagerId, pos, playerIds, config, server.getTickCount());
+        long gruntDelayTicks = ReactionSoundPlayer.delayTicksFor(grunt);
+        talkingStateSync.markTalking(server, level, villagerId, pos, playerIds, config, now, gruntDelayTicks);
     }
 
     /**
-     * The line's own subtitle text, looked up from the loaded catalogue by sound id —
-     * {@link LineRef} deliberately carries only the id (VV-2's own contract), not the text.
+     * The line's own catalogue entry (subtitle text and optional grunt), looked up by sound id —
+     * {@link LineRef} deliberately carries only the id (VV-2's own contract), not the text or the
+     * grunt. {@code null} if no catalogue line matches (e.g. the catalogue reloaded between
+     * selection and display).
      */
-    private static String subtitleTextOf(LineRef line) {
+    private static Line catalogueLineOf(LineRef line) {
         String eventId = line.event().name().toLowerCase(Locale.ROOT);
         for (Line catalogueLine : CatalogueReloadListener.current().linesFor(eventId)) {
             if (catalogueLine.soundId().equals(line.id())) {
-                return catalogueLine.text();
+                return catalogueLine;
             }
         }
         LOGGER.warn("villager_voices: no catalogue line found for sound id {}, showing the id itself", line.id());
-        return line.id();
+        return null;
     }
 
     /**

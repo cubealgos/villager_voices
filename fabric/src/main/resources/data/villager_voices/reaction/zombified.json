@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Nnngh... cold...",
-      "sound": "villager_voices:reaction.zombified.1"
+      "subtitle": "Cold...",
+      "sound": "villager_voices:reaction.zombified.1",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Grrh... something's wrong...",
-      "sound": "villager_voices:reaction.zombified.2"
+      "subtitle": "Something's wrong...",
+      "sound": "villager_voices:reaction.zombified.2",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Nnh, hungry...",
-      "sound": "villager_voices:reaction.zombified.3"
+      "subtitle": "Hungry...",
+      "sound": "villager_voices:reaction.zombified.3",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Hrrgh...",
-      "sound": "villager_voices:reaction.zombified.4"
+      "subtitle": "Can't... think...",
+      "sound": "villager_voices:reaction.zombified.4",
+      "grunt": "minecraft:entity.villager.ambient"
     }
   ]
 }

@@ -12,9 +12,14 @@ VV-2's LineSink, implemented: the adapter that closes the alpha loop.
 - `FabricLineSink(MinecraftServer server, Config config, DisplayQueue displayQueue, TalkingStateSync talkingStateSync)`
 - `void show(UUID villagerId, Set<UUID> playerIds, LineRef line)`
 
+### `class GruntLengths` — `fabric/src/main/java/villager_voices/fabric/sound/GruntLengths.java`
+How long each vanilla villager grunt SoundEvent this mod actually uses takes to play, in ticks (20/s, rounded up) -- how long ReactionSoundPlayer#play delays a line's own sound after its grunt (docs/spec/domains/audio.md AUDIO-REQ-007, AUDIO-DEC-005).
+- `long ticksFor(String gruntId)` — gruntId's measured length in ticks, or {@value #FALLBACK_TICKS} if not in the table.
+
 ### `class ReactionSoundPlayer` — `fabric/src/main/java/villager_voices/fabric/sound/ReactionSoundPlayer.java`
 Plays one line's registered sound server-side (docs/spec/domains/audio.md §3 "Playing server-side"), via ServerLevel.playSeededSound(Entity, double, double, double, Holder&lt;SoundEvent&gt;, SoundSource, float, float, long) — the 26.2 signature confirmed by javap -p against minecraft-merged-deobf-26.2.jar.
-- `void play(ServerLevel level, Vec3 pos, String soundId, float volume, float pitch)` — conversational feel"), already scaled by display.masterVolume
+- `void play(ServerLevel level, Vec3 pos, String soundId, float volume, float pitch, String gruntId, long now, TickScheduler scheduler)` — conversational feel"), already scaled by display.masterVolume — the grunt plays at this same volume (AUDIO-REQ-007: "the line's position, source and volume") or null/blank for no grunt
+- `long delayTicksFor(String gruntId)` — gruntId's measured delay in ticks, or 0 if it is null/blank or does not currently resolve to a registered vanilla SoundEvent — the same check #play itself makes, exposed so a caller (VV-12's TalkingStateSync, via FabricLineSink) can extend the talking-state duration by exactly what will actually be scheduled, never by a grunt that silently fell back to "no grunt."
 
 ### `class SoundRegistration` — `fabric/src/main/java/villager_voices/fabric/sound/SoundRegistration.java`
 Registers one SoundEvent per catalogue line — 64 at 1.0, one per event id in VillagerReactionEvent times its shipped line count — generated at mod init from the same 16 data/villager_voices/reaction/.json resource files villager_voices.fabric.catalogue.CatalogueReloadListener loads through Minecraft's own resource system, never hand-typed per line (docs/spec/domains/audio.md AUDIO-REQ-001).
@@ -23,4 +28,11 @@ Registers one SoundEvent per catalogue line — 64 at 1.0, one per event id in V
 - `Optional<Holder<SoundEvent>> get(String soundId)` — The registered Holder for soundId, once #registerAll() has run.
 - `boolean exists(String soundId)` — Whether soundId names an already-registered SoundEvent — the real check villager_voices.fabric.catalogue.CatalogueReloadListener wires in place of its VV-3 placeholder (REACTION-REQ-012).
 - `Predicate<String> existsPredicate()` — #exists(String) as a Predicate, CatalogueCodec's own constructor shape.
+
+### `class TickScheduler` — `fabric/src/main/java/villager_voices/fabric/sound/TickScheduler.java`
+A tiny tick-delay scheduler (VV-18, docs/spec/domains/audio.md AUDIO-REQ-007): queues a Runnable to run once the server tick clock reaches a given tick, e.g.
+- `void schedule(long dueTick, Runnable task)` — Queues task to run the next time #drain sees currentTick >= dueTick.
+- `void drain(long currentTick)` — Runs and removes every task due by currentTick (i.e.
+- `void clear()` — Discards every still-pending task without running it (server stop).
+- `int pendingCount()` — How many tasks are currently pending -- a test/inspection seam.
 

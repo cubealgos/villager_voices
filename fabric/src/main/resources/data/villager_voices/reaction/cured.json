@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Mrgh! Warm again!",
-      "sound": "villager_voices:reaction.cured.1"
+      "subtitle": "Warm again!",
+      "sound": "villager_voices:reaction.cured.1",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Hmm, that's better.",
-      "sound": "villager_voices:reaction.cured.2"
+      "sound": "villager_voices:reaction.cured.2",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Ah, thank you!",
-      "sound": "villager_voices:reaction.cured.3"
+      "sound": "villager_voices:reaction.cured.3",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Mmh, good as new.",
-      "sound": "villager_voices:reaction.cured.4"
+      "subtitle": "Good as new.",
+      "sound": "villager_voices:reaction.cured.4",
+      "grunt": "minecraft:entity.villager.ambient"
     }
   ]
 }

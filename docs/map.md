@@ -34,7 +34,7 @@ signature page before calling into a package you did not write.
 | `villager_voices.fabric.display` | fabric | ActionBarDisplay | The Fabric-side push for common's villager_voices.display package (docs/spec/domains/display.md): villager_voices.fabric.display.ActionBarDisplay drains the per-player DisplayQueue every server tick and calls ServerPlayer#sendOverlayMessage. |
 | `villager_voices.fabric.events` | fabric | CombatAndStateEvents, PolledEvents, Signals, TradeAndSocialEvents |  |
 | `villager_voices.fabric.mixin` | fabric | BabyGrowsMixin, BellRingMixin, BreedingMixin, LevelUpMixin, RaidStartMixin, RestockMixin, TradeCompletedMixin |  |
-| `villager_voices.fabric.sound` | fabric | FabricLineSink, ReactionSoundPlayer, SoundRegistration | The 64 registered SoundEvents (docs/spec/domains/audio.md, AUDIO-REQ-001), the fabric-side ServerLevel.playSeededSound call, and the LineSink adapter that ties VV-2's reaction pipeline, VV-3's catalogue, and VV-7's display queue into an actually playing/displaying reaction (VV-8). |
+| `villager_voices.fabric.sound` | fabric | FabricLineSink, GruntLengths, ReactionSoundPlayer, SoundRegistration, TickScheduler | The 64 registered SoundEvents (docs/spec/domains/audio.md, AUDIO-REQ-001), the fabric-side ServerLevel.playSeededSound call, and the LineSink adapter that ties VV-2's reaction pipeline, VV-3's catalogue, and VV-7's display queue into an actually playing/displaying reaction (VV-8). |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
 | `villager_voices.fabric.catalogue` | fabric (test) | DefaultCatalogueResourcesTest |  |
 | `villager_voices.fabric.compat` | fabric (gametest) | TalkingStateSyncGameTest |  |
@@ -42,7 +42,7 @@ signature page before calling into a package you did not write.
 | `villager_voices.fabric.debug` | fabric (gametest) | DebugCommandGameTest |  |
 | `villager_voices.fabric.display` | fabric (gametest) | DisplayQueueGameTest |  |
 | `villager_voices.fabric.gametest` | fabric (gametest) | CatalogueGameTest, CombatAndStateGameTest, PanicGameTest, PolledEventsStressGameTest, SmokeGameTest, StareGameTest, TradeAndSocialGameTest |  |
-| `villager_voices.fabric.sound` | fabric (gametest) | ReactionSoundGameTest |  |
+| `villager_voices.fabric.sound` | fabric (gametest) | GruntSequencingGameTest, ReactionSoundGameTest |  |
 | `villager_voices.fabric.sound` | fabric (test) | SoundsJsonResourcesTest |  |
 
 | build script | what |
