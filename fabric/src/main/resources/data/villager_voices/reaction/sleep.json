@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Mrgh... bed time.",
-      "sound": "villager_voices:reaction.sleep.1"
+      "subtitle": "Bed time.",
+      "sound": "villager_voices:reaction.sleep.1",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Hnnh, goodnight.",
-      "sound": "villager_voices:reaction.sleep.2"
+      "subtitle": "Goodnight.",
+      "sound": "villager_voices:reaction.sleep.2",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Mmh... zzz.",
-      "sound": "villager_voices:reaction.sleep.3"
+      "subtitle": "Zzz.",
+      "sound": "villager_voices:reaction.sleep.3",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Ahh, rest at last.",
-      "sound": "villager_voices:reaction.sleep.4"
+      "sound": "villager_voices:reaction.sleep.4",
+      "grunt": "minecraft:entity.villager.ambient"
     }
   ]
 }

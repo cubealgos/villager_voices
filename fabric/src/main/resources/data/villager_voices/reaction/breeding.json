@@ -2,19 +2,23 @@
   "lines": [
     {
       "subtitle": "Hmm, ah, private moment.",
-      "sound": "villager_voices:reaction.breeding.1"
+      "sound": "villager_voices:reaction.breeding.1",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Mrgh, look away, please.",
-      "sound": "villager_voices:reaction.breeding.2"
+      "subtitle": "Look away, please.",
+      "sound": "villager_voices:reaction.breeding.2",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Ah— not now.",
-      "sound": "villager_voices:reaction.breeding.3"
+      "sound": "villager_voices:reaction.breeding.3",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Mmh, a bit of privacy?",
-      "sound": "villager_voices:reaction.breeding.4"
+      "subtitle": "A bit of privacy?",
+      "sound": "villager_voices:reaction.breeding.4",
+      "grunt": "minecraft:entity.villager.ambient"
     }
   ]
 }

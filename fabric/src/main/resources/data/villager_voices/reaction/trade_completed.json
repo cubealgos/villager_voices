@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Mrrgh — traded! Nice.",
-      "sound": "villager_voices:reaction.trade_completed.1"
+      "subtitle": "Traded! Nice.",
+      "sound": "villager_voices:reaction.trade_completed.1",
+      "grunt": "minecraft:entity.villager.trade"
     },
     {
-      "subtitle": "Hmnh, good trade, that.",
-      "sound": "villager_voices:reaction.trade_completed.2"
+      "subtitle": "Good trade, that.",
+      "sound": "villager_voices:reaction.trade_completed.2",
+      "grunt": "minecraft:entity.villager.trade"
     },
     {
       "subtitle": "Ha! Emeralds for me.",
-      "sound": "villager_voices:reaction.trade_completed.3"
+      "sound": "villager_voices:reaction.trade_completed.3",
+      "grunt": "minecraft:entity.villager.trade"
     },
     {
-      "subtitle": "Mmh-hmm, pleasure doing business.",
-      "sound": "villager_voices:reaction.trade_completed.4"
+      "subtitle": "Pleasure doing business.",
+      "sound": "villager_voices:reaction.trade_completed.4",
+      "grunt": "minecraft:entity.villager.trade"
     }
   ]
 }

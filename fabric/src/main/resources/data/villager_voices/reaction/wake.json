@@ -1,20 +1,24 @@
 {
   "lines": [
     {
-      "subtitle": "Mrgh, morning.",
-      "sound": "villager_voices:reaction.wake.1"
+      "subtitle": "Morning.",
+      "sound": "villager_voices:reaction.wake.1",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Hmm, another day.",
-      "sound": "villager_voices:reaction.wake.2"
+      "sound": "villager_voices:reaction.wake.2",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
       "subtitle": "Ah, well rested.",
-      "sound": "villager_voices:reaction.wake.3"
+      "sound": "villager_voices:reaction.wake.3",
+      "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Mmh, let's get to it.",
-      "sound": "villager_voices:reaction.wake.4"
+      "subtitle": "Let's get to it.",
+      "sound": "villager_voices:reaction.wake.4",
+      "grunt": "minecraft:entity.villager.ambient"
     }
   ]
 }

@@ -2,19 +2,23 @@
   "lines": [
     {
       "subtitle": "Ha! Reinforcements.",
-      "sound": "villager_voices:reaction.golem_summoned.1"
+      "sound": "villager_voices:reaction.golem_summoned.1",
+      "grunt": "minecraft:entity.villager.celebrate"
     },
     {
-      "subtitle": "Mrgh, good, backup.",
-      "sound": "villager_voices:reaction.golem_summoned.2"
+      "subtitle": "Good, backup.",
+      "sound": "villager_voices:reaction.golem_summoned.2",
+      "grunt": "minecraft:entity.villager.celebrate"
     },
     {
       "subtitle": "Ah, our protector.",
-      "sound": "villager_voices:reaction.golem_summoned.3"
+      "sound": "villager_voices:reaction.golem_summoned.3",
+      "grunt": "minecraft:entity.villager.celebrate"
     },
     {
-      "subtitle": "Mmh, feel safer now.",
-      "sound": "villager_voices:reaction.golem_summoned.4"
+      "subtitle": "Feel safer now.",
+      "sound": "villager_voices:reaction.golem_summoned.4",
+      "grunt": "minecraft:entity.villager.celebrate"
     }
   ]
 }
