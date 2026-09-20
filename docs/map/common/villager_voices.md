@@ -22,6 +22,10 @@ The selection rule (docs/spec/domains/reaction.md "Selection rule", REACTION-REQ
 Shows a selected line to whichever players should receive it.
 - `void show(UUID villagerId, Set<UUID> playerIds, LineRef line)` — Shows line for villagerId to playerIds.
 
+### `class PanicDetector` — `common/src/main/java/villager_voices/PanicDetector.java`
+Edge-triggered `panic` detection (docs/spec/domains/reaction.md §3 `panic` row, `ARCH-DEC-003`): the mod has no push-based hook for a villager's Brain.isActive(Activity.PANIC) state, so a fabric-side poll samples it once per server tick and hands the boolean here (`villager_voices.fabric.events.PolledEvents`).
+- `boolean sample(UUID villagerId, boolean isPanicking)` — Samples one villager's panic state for the current tick.
+
 ### `class ReactionRules` — `common/src/main/java/villager_voices/ReactionRules.java`
 Pure cooldown, rate-limit, silence, and last-played-line bookkeeping for one VillagerEventBus (docs/spec/domains/reaction.md §3, REACTION-REQ-005–010).
 - `long DEFAULT_PER_EVENT_COOLDOWN_TICKS` — Per-villager-per-event cooldown default: 60s at 20 ticks/s (REACTION-REQ-006).
@@ -34,6 +38,13 @@ Pure cooldown, rate-limit, silence, and last-played-line bookkeeping for one Vil
 - `Optional<LineRef> lastPlayed(UUID villagerId, VillagerReactionEvent event)` — The line that played last for villagerId on event, if any.
 - `void record(UUID villagerId, VillagerReactionEvent event, LineRef line, long nowTicks)` — Records that line was selected for villagerId/event at nowTicks: starts both cooldown windows and remembers the line for the next no-immediate-repeat selection (REACTION-REQ-005).
 - `boolean tryConsumePlayerRate(UUID playerId, long nowTicks)` — Attempts to consume playerId's server-wide rate-limit slot at nowTicks (REACTION-REQ-008), independent of how many villagers are nearby: returns true and starts a fresh window when the player's last line was at least perPlayerRateLimitTicks ago (or never); returns false and leaves the window untouched otherwise.
+
+### `class StareDetector` — `common/src/main/java/villager_voices/StareDetector.java`
+Edge-triggered `player_staring` detection (docs/spec/domains/reaction.md §3 `player_staring` row, §7: "genuinely new design, no research precedent, first ticket" — the three thresholds below are this ticket's own proposal, recorded in `VV-6`'s Findings, not a value the spec already named).
+- `double DOT_THRESHOLD` — cos(15°): the player's look vector must point within ~15 degrees of the vector to the villager's eyes — narrow enough to mean "looking at this villager specifically", not merely "this villager is somewhere in view".
+- `double RANGE_BLOCKS` — 8 blocks: close enough for the stare to plausibly be noticed, deliberately tighter than `reaction.md` §3's 16-block sound-hearing default — hearing a villager and having it notice a stare are different distances, and this event is about the latter.
+- `int REQUIRED_TICKS` — 40 ticks (2s at 20 ticks/s): long enough that a passing camera swing across the villager does not qualify, short enough to feel responsive.
+- `boolean sample(UUID playerId, UUID villagerId, double dot, double distanceBlocks)` — Samples one player/villager pair for the current tick.
 
 ### `class VillagerEventBus` — `common/src/main/java/villager_voices/VillagerEventBus.java`
 Dispatches VillagerReactionSignals from every discovered VillagerEventSource to its subscribers (VV-1's original behaviour, unchanged and always run first), and — once configured with a LineCatalogue, a LineSink, a clock, and a random source — also runs each published signal through ReactionRules and LineSelector and hands the selected line to the sink (docs/spec/domains/reaction.md §3, REACTION-REQ-005–010, VV-2).
