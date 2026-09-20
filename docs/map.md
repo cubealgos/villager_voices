@@ -24,11 +24,12 @@ signature page before calling into a package you did not write.
 | `villager_voices.fabric.catalogue` | fabric | CatalogueReloadListener |  |
 | `villager_voices.fabric.client` | fabric | VillagerVoicesFabricClient |  |
 | `villager_voices.fabric.display` | fabric | ActionBarDisplay | The Fabric-side push for common's villager_voices.display package (docs/spec/domains/display.md): villager_voices.fabric.display.ActionBarDisplay drains the per-player DisplayQueue every server tick and calls ServerPlayer#sendOverlayMessage. |
-| `villager_voices.fabric.events` | fabric | CombatAndStateEvents, PolledEvents |  |
+| `villager_voices.fabric.events` | fabric | CombatAndStateEvents, PolledEvents, Signals, TradeAndSocialEvents |  |
+| `villager_voices.fabric.mixin` | fabric | BabyGrowsMixin, BellRingMixin, BreedingMixin, LevelUpMixin, RaidStartMixin, RestockMixin, TradeCompletedMixin |  |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
 | `villager_voices.fabric.catalogue` | fabric (test) | DefaultCatalogueResourcesTest |  |
 | `villager_voices.fabric.display` | fabric (gametest) | DisplayQueueGameTest |  |
-| `villager_voices.fabric.gametest` | fabric (gametest) | CatalogueGameTest, CombatAndStateGameTest, PanicGameTest, PolledEventsStressGameTest, SmokeGameTest, StareGameTest |  |
+| `villager_voices.fabric.gametest` | fabric (gametest) | CatalogueGameTest, CombatAndStateGameTest, PanicGameTest, PolledEventsStressGameTest, SmokeGameTest, StareGameTest, TradeAndSocialGameTest |  |
 
 | build script | what |
 |---|---|

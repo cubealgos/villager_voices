@@ -13,3 +13,16 @@ Wires VV-5's six combat/state events (docs/spec/domains/reaction.md §3: hurt, k
 VV-6: the two events with no push-based hook at all (docs/spec/domains/reaction.md §3, `panic` and `player_staring` rows) — detected by polling loaded villagers once per server tick (`ARCH-DEC-003`) instead of a mixin or native event.
 - `void register(VillagerEventBus bus)` — Registers the poll against bus: one ServerTickEvents#END_SERVER_TICK listener.
 
+### `class Signals` — `fabric/src/main/java/villager_voices/fabric/events/Signals.java`
+Turns a real, jar-side LivingEntity into a VillagerReactionSignal: the villager's own asleep/baby flags (docs/spec/domains/reaction.md §3's silence rules, REACTION-REQ-009/010) and the ids of the players within hearing range (docs/spec/domains/reaction.md §3 "Hearing range", REACTION-REQ-008).
+- `double HEARING_RANGE_BLOCKS` — Hearing-range search radius, in blocks.
+- `VillagerReactionSignal of(LivingEntity entity, VillagerReactionEvent event)` — Builds a signal for event detected on entity: villagerAsleep/ villagerBaby read straight off the entity at the moment of detection (the same tick the hook fired, per VillagerReactionSignal's own contract), nearbyPlayerIds from #nearbyPlayerIds(LivingEntity).
+- `Set<UUID> nearbyPlayerIds(LivingEntity entity)` — The ids of every player within #HEARING_RANGE_BLOCKS of entity.
+- `Set<UUID> nearbyPlayerIds(Level level, AABB origin)` — The ids of every player within #HEARING_RANGE_BLOCKS of origin.
+
+### `class TradeAndSocialEvents` — `fabric/src/main/java/villager_voices/fabric/events/TradeAndSocialEvents.java`
+VV-4's eight events — trade and social — per docs/spec/domains/reaction.md §3: trade_completed, offer_opened, level_up, restock, raid_bell, breeding, baby_grows, golem_summoned.
+- `void register(VillagerEventBus bus)` — Registers this ticket's native-event hooks against bus.
+- `void publish(VillagerReactionSignal signal)` — Called by this ticket's mixins to publish a single-villager signal.
+- `void publishToNearbyVillagers(Level level, BlockPos origin, VillagerReactionEvent event)` — Publishes event once per Villager within #PROXIMITY_RANGE_BLOCKS of origin — the "burst" a raid bell ring/raid start or a golem summon produces (every nearby villager reacts independently), queued for display once VV-7 lands (this ticket's own acceptance criteria: observable as a burst, not required to display correctly yet).
+

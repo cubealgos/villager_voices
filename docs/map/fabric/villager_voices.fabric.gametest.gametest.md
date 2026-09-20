@@ -37,3 +37,15 @@ VV-6: `player_staring` fires once a player has kept a villager within StareDetec
 - `void playerStaringFiresAfterRequiredTicksAtCloseRange(GameTestHelper helper)`
 - `void playerStaringDoesNotFireBeyondRange(GameTestHelper helper)`
 
+### `class TradeAndSocialGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/TradeAndSocialGameTest.java`
+One game test per VV-4 event (docs/spec/operations/testing.md "Game tests" row, TEST-REQ-003): a real Villager entity, a real trigger for the event's own hook, and the result captured through VillagerVoicesFabric#BUS's subscriber API (VV-1) rather than the display, per this ticket's own instruction.
+- `void tradeCompletedFiresOnNotifyTrade(GameTestHelper helper)`
+- `void offerOpenedFiresOnInteract(GameTestHelper helper)`
+- `void levelUpFiresOnIncreasedLevel(GameTestHelper helper)`
+- `void levelUpDoesNotFireWhenLevelIsUnchanged(GameTestHelper helper)`
+- `void restockFiresOnRestock(GameTestHelper helper)`
+- `void raidBellFiresOnBellHit(GameTestHelper helper)`
+- `void breedingFiresOnSuccessfulBreedOffspring(GameTestHelper helper)`
+- `void babyGrowsFiresOnAgeBoundaryReached(GameTestHelper helper)`
+- `void golemSummonedFiresOnIronGolemLoad(GameTestHelper helper)`
+

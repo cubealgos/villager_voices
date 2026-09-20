@@ -8,6 +8,7 @@
   "entrypoints": {
     "fabric-gametest": [
       "villager_voices.fabric.gametest.SmokeGameTest",
+      "villager_voices.fabric.gametest.TradeAndSocialGameTest",
       "villager_voices.fabric.gametest.PanicGameTest",
       "villager_voices.fabric.gametest.StareGameTest",
       "villager_voices.fabric.gametest.PolledEventsStressGameTest",
