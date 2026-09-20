@@ -1,0 +1,386 @@
+{
+  "reaction.trade_completed.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.trade_completed.1"
+  },
+  "reaction.trade_completed.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.trade_completed.2"
+  },
+  "reaction.trade_completed.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.trade_completed.3"
+  },
+  "reaction.trade_completed.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.trade_completed.4"
+  },
+  "reaction.offer_opened.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.offer_opened.1"
+  },
+  "reaction.offer_opened.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.offer_opened.2"
+  },
+  "reaction.offer_opened.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.offer_opened.3"
+  },
+  "reaction.offer_opened.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.offer_opened.4"
+  },
+  "reaction.hurt.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.hurt.1"
+  },
+  "reaction.hurt.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.hurt.2"
+  },
+  "reaction.hurt.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.hurt.3"
+  },
+  "reaction.hurt.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.hurt.4"
+  },
+  "reaction.killed.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.killed.1"
+  },
+  "reaction.killed.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.killed.2"
+  },
+  "reaction.killed.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.killed.3"
+  },
+  "reaction.killed.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.killed.4"
+  },
+  "reaction.zombified.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.zombified.1"
+  },
+  "reaction.zombified.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.zombified.2"
+  },
+  "reaction.zombified.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.zombified.3"
+  },
+  "reaction.zombified.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.zombified.4"
+  },
+  "reaction.cured.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.cured.1"
+  },
+  "reaction.cured.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.cured.2"
+  },
+  "reaction.cured.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.cured.3"
+  },
+  "reaction.cured.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.cured.4"
+  },
+  "reaction.level_up.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.level_up.1"
+  },
+  "reaction.level_up.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.level_up.2"
+  },
+  "reaction.level_up.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.level_up.3"
+  },
+  "reaction.level_up.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.level_up.4"
+  },
+  "reaction.restock.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.restock.1"
+  },
+  "reaction.restock.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.restock.2"
+  },
+  "reaction.restock.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.restock.3"
+  },
+  "reaction.restock.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.restock.4"
+  },
+  "reaction.sleep.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.sleep.1"
+  },
+  "reaction.sleep.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.sleep.2"
+  },
+  "reaction.sleep.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.sleep.3"
+  },
+  "reaction.sleep.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.sleep.4"
+  },
+  "reaction.wake.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.wake.1"
+  },
+  "reaction.wake.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.wake.2"
+  },
+  "reaction.wake.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.wake.3"
+  },
+  "reaction.wake.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.wake.4"
+  },
+  "reaction.raid_bell.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.raid_bell.1"
+  },
+  "reaction.raid_bell.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.raid_bell.2"
+  },
+  "reaction.raid_bell.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.raid_bell.3"
+  },
+  "reaction.raid_bell.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.raid_bell.4"
+  },
+  "reaction.golem_summoned.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.golem_summoned.1"
+  },
+  "reaction.golem_summoned.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.golem_summoned.2"
+  },
+  "reaction.golem_summoned.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.golem_summoned.3"
+  },
+  "reaction.golem_summoned.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.golem_summoned.4"
+  },
+  "reaction.panic.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.panic.1"
+  },
+  "reaction.panic.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.panic.2"
+  },
+  "reaction.panic.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.panic.3"
+  },
+  "reaction.panic.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.panic.4"
+  },
+  "reaction.player_staring.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.player_staring.1"
+  },
+  "reaction.player_staring.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.player_staring.2"
+  },
+  "reaction.player_staring.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.player_staring.3"
+  },
+  "reaction.player_staring.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.player_staring.4"
+  },
+  "reaction.breeding.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.breeding.1"
+  },
+  "reaction.breeding.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.breeding.2"
+  },
+  "reaction.breeding.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.breeding.3"
+  },
+  "reaction.breeding.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.breeding.4"
+  },
+  "reaction.baby_grows.1": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.baby_grows.1"
+  },
+  "reaction.baby_grows.2": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.baby_grows.2"
+  },
+  "reaction.baby_grows.3": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.baby_grows.3"
+  },
+  "reaction.baby_grows.4": {
+    "sounds": [
+      "reaction/placeholder"
+    ],
+    "subtitle": "subtitles.villager_voices.reaction.baby_grows.4"
+  }
+}

@@ -27,11 +27,11 @@ import villager_voices.fabric.events.CombatAndStateEvents;
 /**
  * VV-5: each of the six combat/state events (docs/spec/domains/reaction.md §3,
  * {@code REACTION-REQ-001}) actually fires its native Fabric hook and reaches
- * {@link VillagerVoicesFabric#BUS} in a real world, against a real {@link Villager} or
+ * {@link VillagerVoicesFabric#eventBus()} in a real world, against a real {@link Villager} or
  * {@link ZombieVillager} entity — no fakes below the bus (docs/spec/operations/testing.md). Each
- * test subscribes its own capturing consumer to {@link VillagerVoicesFabric#BUS}, filtered to
- * its own villager's id, rather than building a fresh bus of its own: a fresh bus would never
- * see events dispatched through the sources actually wired at mod init.
+ * test subscribes its own capturing consumer to {@link VillagerVoicesFabric#eventBus()}, filtered
+ * to its own villager's id, rather than building a fresh bus of its own: a fresh bus would never
+ * see events dispatched through the sources actually wired at server start (VV-8).
  */
 public final class CombatAndStateGameTest {
 
@@ -92,7 +92,7 @@ public final class CombatAndStateGameTest {
     public void curedNamesTheResultingVillager(GameTestHelper helper) {
         ZombieVillager zombieVillager = helper.spawn(EntityTypes.ZOMBIE_VILLAGER, new BlockPos(2, 1, 2));
         List<VillagerReactionSignal> captured = new ArrayList<>();
-        VillagerVoicesFabric.BUS.subscribe(captured::add);
+        VillagerVoicesFabric.eventBus().subscribe(captured::add);
 
         Villager resulting = zombieVillager.convertTo(
                 EntityTypes.VILLAGER, ConversionParams.single(zombieVillager, true, true), v -> { });
@@ -137,11 +137,13 @@ public final class CombatAndStateGameTest {
     /**
      * REACTION-REQ-009 end to end: "the system shall suppress every event except {@code sleep}
      * itself while the triggering villager is asleep." Proven against a dedicated, fully
-     * configured local bus (its own {@link LineCatalogue}/{@link LineSink}/clock/roll — VV-3/
-     * VV-7/VV-8's eventual shape, docs/spec/operations/testing.md), since
-     * {@link VillagerVoicesFabric#BUS} itself has no reaction pipeline configured yet (built with
-     * {@link VillagerEventBus}'s no-argument constructor until those tickets land) and so cannot
-     * demonstrate selection being suppressed.
+     * configured local bus (its own fake {@link LineCatalogue}/{@link LineSink}/clock/roll,
+     * docs/spec/operations/testing.md) rather than {@link VillagerVoicesFabric#eventBus()} — VV-8's
+     * real bus is fully configured too by the time any game test runs (built at
+     * {@code SERVER_STARTED}, before the game test server itself starts), but its real catalogue,
+     * clock, and roll would make this test's outcome dependent on shared state and real time
+     * instead of the deterministic fake catalogue (only {@code ZOMBIFIED} eligible) and fake clock
+     * this assertion needs.
      *
      * <p>Registers {@link CombatAndStateEvents} a second time onto that local bus — harmless: a
      * Fabric API event accepts any number of listeners, and this test only reads its own local
@@ -199,7 +201,7 @@ public final class CombatAndStateGameTest {
 
     private static List<VillagerReactionSignal> subscribe(UUID villagerId) {
         List<VillagerReactionSignal> captured = new ArrayList<>();
-        VillagerVoicesFabric.BUS.subscribe(signal -> {
+        VillagerVoicesFabric.eventBus().subscribe(signal -> {
             if (signal.villagerId().equals(villagerId)) {
                 captured.add(signal);
             }

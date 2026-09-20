@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -56,12 +57,20 @@ final class SourceSurfaceTest {
         }
     }
 
+    /** Binary asset extensions this scan cannot read as text (VV-8 added {@code .ogg} placeholders). */
+    private static final Set<String> BINARY_EXTENSIONS = Set.of(".ogg", ".png", ".jar");
+
     private static List<Path> allTextFiles() throws IOException {
         try (Stream<Path> mainWalk = Files.walk(MAIN); Stream<Path> resourcesWalk = Files.walk(RESOURCES)) {
             List<Path> files = new ArrayList<>();
-            mainWalk.filter(Files::isRegularFile).forEach(files::add);
-            resourcesWalk.filter(Files::isRegularFile).forEach(files::add);
+            mainWalk.filter(Files::isRegularFile).filter(SourceSurfaceTest::isText).forEach(files::add);
+            resourcesWalk.filter(Files::isRegularFile).filter(SourceSurfaceTest::isText).forEach(files::add);
             return files;
         }
+    }
+
+    private static boolean isText(Path file) {
+        String name = file.getFileName().toString();
+        return BINARY_EXTENSIONS.stream().noneMatch(name::endsWith);
     }
 }

@@ -15,7 +15,8 @@
       "villager_voices.fabric.gametest.CombatAndStateGameTest",
       "villager_voices.fabric.gametest.CatalogueGameTest",
       "villager_voices.fabric.display.DisplayQueueGameTest",
-      "villager_voices.fabric.debug.DebugCommandGameTest"
+      "villager_voices.fabric.debug.DebugCommandGameTest",
+      "villager_voices.fabric.sound.ReactionSoundGameTest"
     ]
   },
   "depends": {

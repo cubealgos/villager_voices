@@ -10,11 +10,11 @@ import org.slf4j.LoggerFactory;
 import villager_voices.catalogue.Catalogue;
 import villager_voices.catalogue.CatalogueLoadException;
 import villager_voices.fabric.VillagerVoicesFabric;
+import villager_voices.fabric.sound.SoundRegistration;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * Loads {@code data/villager_voices/reaction/<event>.json} through Minecraft's own resource/datapack
@@ -29,12 +29,12 @@ import java.util.function.Predicate;
  * pack's file for an event id already replaces the earlier one entirely by the time this class ever
  * sees it; no merge logic lives here.
  *
- * <p>The sound-id registry check ({@code REACTION-REQ-012}) is a permissive placeholder for this
- * ticket (VV-3): real {@code SoundEvent} registration is VV-8's territory, and none of the 64
- * shipped sound ids are registered yet, so a real {@code BuiltInRegistries.SOUND_EVENT} check here
- * would reject every default line. VV-8 replaces {@link #SOUND_EXISTS_PLACEHOLDER} with a real
- * registry lookup; {@code common}'s own codec and its rejection path are already fully exercised
- * with a fake predicate in {@code common/src/test}.
+ * <p>The sound-id registry check ({@code REACTION-REQ-012}) is {@link SoundRegistration#exists},
+ * a real {@code BuiltInRegistries.SOUND_EVENT} lookup (VV-8) — VV-3's original note above described
+ * a permissive placeholder here, before {@link SoundRegistration#registerAll()} existed to run
+ * first, from {@link VillagerVoicesFabric#onInitialize()}, and register all 64 ids before this
+ * listener's first {@code prepare()} ever runs. {@code common}'s own codec and its rejection path
+ * are already fully exercised with a fake predicate in {@code common/src/test}.
  */
 public final class CatalogueReloadListener extends SimplePreparableReloadListener<Catalogue> {
 
@@ -42,9 +42,6 @@ public final class CatalogueReloadListener extends SimplePreparableReloadListene
     private static final String DIRECTORY = "reaction";
     private static final String EXTENSION = ".json";
     private static final Identifier ID = Identifier.fromNamespaceAndPath(VillagerVoicesFabric.MOD_ID, "reaction_catalogue");
-
-    /** VV-8 replaces this with a real {@code BuiltInRegistries.SOUND_EVENT} lookup. */
-    private static final Predicate<String> SOUND_EXISTS_PLACEHOLDER = soundId -> true;
 
     private static volatile Catalogue current = Catalogue.builder().build();
 
@@ -68,7 +65,7 @@ public final class CatalogueReloadListener extends SimplePreparableReloadListene
             String eventId = eventIdOf(resourceId);
             try (BufferedReader reader = entry.getValue().openAsReader()) {
                 String json = reader.lines().reduce("", (a, b) -> a.isEmpty() ? b : a + "\n" + b);
-                builder.load(eventId, json, SOUND_EXISTS_PLACEHOLDER);
+                builder.load(eventId, json, SoundRegistration::exists);
             } catch (IOException e) {
                 throw new CatalogueLoadException("failed to read " + resourceId + ": " + e.getMessage());
             }

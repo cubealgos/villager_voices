@@ -11,14 +11,14 @@ VV-3: the 16-event line catalogue loads through Minecraft's own resource/datapac
 - `void theGametestDatapackOverridesRestocksLinesEntirely(GameTestHelper helper)`
 
 ### `class CombatAndStateGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/CombatAndStateGameTest.java`
-VV-5: each of the six combat/state events (docs/spec/domains/reaction.md §3, REACTION-REQ-001) actually fires its native Fabric hook and reaches VillagerVoicesFabric#BUS in a real world, against a real Villager or ZombieVillager entity — no fakes below the bus (docs/spec/operations/testing.md).
+VV-5: each of the six combat/state events (docs/spec/domains/reaction.md §3, REACTION-REQ-001) actually fires its native Fabric hook and reaches VillagerVoicesFabric#eventBus() in a real world, against a real Villager or ZombieVillager entity — no fakes below the bus (docs/spec/operations/testing.md).
 - `void hurtReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`hurt`): LivingEntity.hurtServer → AFTER_DAMAGE.
 - `void killedReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`killed`): LivingEntity.die → AFTER_DEATH.
 - `void zombifiedNamesTheOriginalVillager(GameTestHelper helper)` — REACTION-REQ-001 (`zombified`): Villager.convertTo(ZOMBIE_VILLAGER, ...) → MOB_CONVERSION, direction proof #1 — the signal names the villager being converted (the original), per the ticket, not the zombie villager it becomes.
 - `void curedNamesTheResultingVillager(GameTestHelper helper)` — REACTION-REQ-001 (`cured`): ZombieVillager.convertTo(VILLAGER, ...) → MOB_CONVERSION, direction proof #2 — the signal names the resulting villager, per the ticket, not the zombie villager it was cured from.
 - `void sleepReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`sleep`): LivingEntity.startSleeping → START_SLEEPING.
 - `void wakeReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`wake`): LivingEntity.stopSleeping → STOP_SLEEPING.
-- `void sleepingVillagerSuppressesZombifiedFromTheSink(GameTestHelper helper)` — REACTION-REQ-009 end to end: "the system shall suppress every event except sleep itself while the triggering villager is asleep." Proven against a dedicated, fully configured local bus (its own LineCatalogue/LineSink/clock/roll — VV-3/ VV-7/VV-8's eventual shape, docs/spec/operations/testing.md), since VillagerVoicesFabric#BUS itself has no reaction pipeline configured yet (built with VillagerEventBus's no-argument constructor until those tickets land) and so cannot demonstrate selection being suppressed.
+- `void sleepingVillagerSuppressesZombifiedFromTheSink(GameTestHelper helper)` — REACTION-REQ-009 end to end: "the system shall suppress every event except sleep itself while the triggering villager is asleep." Proven against a dedicated, fully configured local bus (its own fake LineCatalogue/LineSink/clock/roll, docs/spec/operations/testing.md) rather than VillagerVoicesFabric#eventBus() — VV-8's real bus is fully configured too by the time any game test runs (built at SERVER_STARTED, before the game test server itself starts), but its real catalogue, clock, and roll would make this test's outcome dependent on shared state and real time instead of the deterministic fake catalogue (only ZOMBIFIED eligible) and fake clock this assertion needs.
 
 ### `class PanicGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/PanicGameTest.java`
 VV-6: `panic` fires exactly once per panic episode -- edge-detected, not once per tick while panicking (docs/spec/domains/reaction.md §3 `panic` row, `PanicDetector`'s own contract, `REACTION-FAIL-004`).
@@ -38,7 +38,7 @@ VV-6: `player_staring` fires once a player has kept a villager within StareDetec
 - `void playerStaringDoesNotFireBeyondRange(GameTestHelper helper)`
 
 ### `class TradeAndSocialGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/TradeAndSocialGameTest.java`
-One game test per VV-4 event (docs/spec/operations/testing.md "Game tests" row, TEST-REQ-003): a real Villager entity, a real trigger for the event's own hook, and the result captured through VillagerVoicesFabric#BUS's subscriber API (VV-1) rather than the display, per this ticket's own instruction.
+One game test per VV-4 event (docs/spec/operations/testing.md "Game tests" row, TEST-REQ-003): a real Villager entity, a real trigger for the event's own hook, and the result captured through VillagerVoicesFabric#eventBus()'s subscriber API (VV-1) rather than the display, per this ticket's own instruction.
 - `void tradeCompletedFiresOnNotifyTrade(GameTestHelper helper)`
 - `void offerOpenedFiresOnInteract(GameTestHelper helper)`
 - `void levelUpFiresOnIncreasedLevel(GameTestHelper helper)`

@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
  *
  * <p>{@code trigger <event> <villager>} constructs a {@link VillagerReactionSignal} for the named
  * event on the targeted villager and publishes it on a throwaway {@link VillagerEventBus} wired to
- * the real, currently-loaded {@link Catalogue} (VV-3) and the mod's real
- * {@link VillagerVoicesFabric#DISPLAY_QUEUE} (VV-7), through
+ * the real, currently-loaded {@link Catalogue} (VV-3) and the mod's real, currently-live
+ * {@link VillagerVoicesFabric#displayQueue()} (VV-7/VV-8), through
  * {@link VillagerEventBus#publishBypassingRules} -- so the per-event and per-villager-global
  * cooldowns never block the forced event, but selection (VV-2's {@code LineSelector}), the
  * no-immediate-repeat rule, the sleep/baby silence rule, and the action-bar display all run exactly
@@ -110,7 +110,7 @@ public final class DebugCommand {
         VillagerReactionSignal signal = new VillagerReactionSignal(villager.getUUID(), event, asleep, baby, recipients);
 
         Catalogue catalogue = CatalogueReloadListener.current();
-        CapturingSink sink = new CapturingSink(catalogue, VillagerVoicesFabric.DISPLAY_QUEUE, villager.getDisplayName().getString());
+        CapturingSink sink = new CapturingSink(catalogue, VillagerVoicesFabric.displayQueue(), villager.getDisplayName().getString());
         VillagerEventBus bus = new VillagerEventBus(new CatalogueAdapter(catalogue), sink, System::currentTimeMillis, new Random()::nextInt);
         bus.publishBypassingRules(signal);
 

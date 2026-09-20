@@ -27,10 +27,11 @@ import villager_voices.fabric.VillagerVoicesFabric;
 /**
  * One game test per VV-4 event (docs/spec/operations/testing.md "Game tests" row,
  * TEST-REQ-003): a real {@link Villager} entity, a real trigger for the event's own hook, and the
- * result captured through {@link VillagerVoicesFabric#BUS}'s subscriber API (VV-1) rather than the
- * display, per this ticket's own instruction. Every test filters captured signals to the specific
- * villager id and event it triggered, since {@link VillagerVoicesFabric#BUS} is a single
- * mod-init-lifetime bus shared by every game test in this run.
+ * result captured through {@link VillagerVoicesFabric#eventBus()}'s subscriber API (VV-1) rather
+ * than the display, per this ticket's own instruction. Every test filters captured signals to the
+ * specific villager id and event it triggered, since {@link VillagerVoicesFabric#eventBus()} is a
+ * single server-lifetime bus shared by every game test in this run (VV-8: built once
+ * {@code SERVER_STARTED} fires, before any game test runs).
  */
 public final class TradeAndSocialGameTest {
 
@@ -177,7 +178,7 @@ public final class TradeAndSocialGameTest {
     /** Subscribes a fresh collector to the mod's own live bus (VV-1's subscriber API). */
     private static List<VillagerReactionSignal> subscribe() {
         List<VillagerReactionSignal> captured = new ArrayList<>();
-        VillagerVoicesFabric.BUS.subscribe(captured::add);
+        VillagerVoicesFabric.eventBus().subscribe(captured::add);
         return captured;
     }
 

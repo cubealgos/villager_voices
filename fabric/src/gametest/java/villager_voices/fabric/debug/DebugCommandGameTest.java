@@ -46,7 +46,7 @@ public final class DebugCommandGameTest {
      * {@code trigger trade_completed} on a real villager: "a captured line through a test
      * subscriber" reads here as a real recipient -- a mock player placed exactly at the villager's
      * position, well within {@code ActionBarDisplay#PLACEHOLDER_HEARING_RADIUS_BLOCKS} -- actually
-     * receiving a line on the mod's real {@link VillagerVoicesFabric#DISPLAY_QUEUE} (VV-7's own
+     * receiving a line on the mod's real {@link VillagerVoicesFabric#displayQueue()} (VV-7's own
      * queue, not a stand-in), proving the "real display" half of {@code VV-13}'s acceptance
      * criteria; the feedback key proves the command itself reported a selection, the "real
      * selection" half (VV-2's {@code LineSelector}, not a hardcoded test line).
@@ -68,7 +68,7 @@ public final class DebugCommandGameTest {
                 capturing.hasKey("command.villager_voices.debug.trigger.selected"),
                 "trigger reported a selected line: " + capturing.describe());
 
-            DisplayQueue queue = VillagerVoicesFabric.DISPLAY_QUEUE;
+            DisplayQueue queue = VillagerVoicesFabric.displayQueue();
             boolean captured = queue.pendingCount(player.getUUID()) > 0 || queue.current(player.getUUID()) != null;
             helper.assertTrue(captured, "the forced line reached the real display queue for the nearby player");
             helper.succeed();
