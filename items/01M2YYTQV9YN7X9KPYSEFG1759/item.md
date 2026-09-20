@@ -26,13 +26,13 @@ the command is a faithful end-to-end test of the real pipeline, not a separate c
 
 ## Acceptance criteria
 
-- [ ] `/villager_voices debug trigger <event> <target>` fires the named event on the targeted
+- [x] `/villager_voices debug trigger <event> <target>` fires the named event on the targeted
       villager immediately, ignoring cooldowns, for all 16 event names.
-- [ ] The forced event still goes through real selection (`VV-2`) and real display (`VV-7`) — not a
+- [x] The forced event still goes through real selection (`VV-2`) and real display (`VV-7`) — not a
       hardcoded test line.
-- [ ] An invalid event name is rejected with a clear command-syntax error, not a silent no-op or
+- [x] An invalid event name is rejected with a clear command-syntax error, not a silent no-op or
       crash.
-- [ ] The command is available in a `just client` session without additional setup.
+- [x] The command is available in a `just client` session without additional setup.
 
 ## Constraints and prior findings
 
