@@ -33,15 +33,15 @@ parameters (not `System.currentTimeMillis()`/`Math.random()` directly) so the fa
 
 ## Acceptance criteria
 
-- [ ] A per-event and a per-villager-global cooldown suppress a detected event within their window
+- [x] A per-event and a per-villager-global cooldown suppress a detected event within their window
       (`REACTION-REQ-006`, `REACTION-REQ-007`), unit-tested with a fake clock.
-- [ ] A server-wide per-player rate limit suppresses a line independent of how many villagers are
+- [x] A server-wide per-player rate limit suppresses a line independent of how many villagers are
       nearby (`REACTION-REQ-008`), unit-tested.
-- [ ] Every event but `sleep` is suppressed while the triggering villager is asleep, and every
+- [x] Every event but `sleep` is suppressed while the triggering villager is asleep, and every
       event but `baby_grows` is suppressed while it is a baby (`REACTION-REQ-009`, `REACTION-REQ-010`).
-- [ ] Selection excludes the line that played last for that villager on that event
+- [x] Selection excludes the line that played last for that villager on that event
       (`REACTION-REQ-005`), unit-tested with a fixed random source.
-- [ ] `common:verifyLoaderFree` still passes; no Minecraft/Fabric/NeoForge import anywhere in this
+- [x] `common:verifyLoaderFree` still passes; no Minecraft/Fabric/NeoForge import anywhere in this
       change.
 
 ## Constraints and prior findings

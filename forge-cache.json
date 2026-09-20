@@ -1,0 +1,17 @@
+{
+  "pulls": {
+    "at": 1789893923.072693,
+    "payload": [
+      {
+        "author": "scheeren",
+        "base": "development",
+        "ci": "success",
+        "head": "chore/vv-1-bootstrap",
+        "index": "1",
+        "state": "merged",
+        "title": "chore(villager_voices): bootstrap: common and fabric modules, loader-free check, entrypoints, licence, notice, routing, tools, spec copy, smoke game test (VV-1)",
+        "updated": "2026-09-20T08:35:52Z"
+      }
+    ]
+  }
+}
