@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Nnngh... cold...",
+      "sound": "villager_voices:reaction.zombified.1"
+    },
+    {
+      "subtitle": "Grrh... something's wrong...",
+      "sound": "villager_voices:reaction.zombified.2"
+    },
+    {
+      "subtitle": "Nnh, hungry...",
+      "sound": "villager_voices:reaction.zombified.3"
+    },
+    {
+      "subtitle": "Hrrgh...",
+      "sound": "villager_voices:reaction.zombified.4"
+    }
+  ]
+}

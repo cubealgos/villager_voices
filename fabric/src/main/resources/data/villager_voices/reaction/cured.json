@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh! Warm again!",
+      "sound": "villager_voices:reaction.cured.1"
+    },
+    {
+      "subtitle": "Hmm, that's better.",
+      "sound": "villager_voices:reaction.cured.2"
+    },
+    {
+      "subtitle": "Ah, thank you!",
+      "sound": "villager_voices:reaction.cured.3"
+    },
+    {
+      "subtitle": "Mmh, good as new.",
+      "sound": "villager_voices:reaction.cured.4"
+    }
+  ]
+}

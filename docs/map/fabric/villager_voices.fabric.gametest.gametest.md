@@ -5,6 +5,11 @@
 Every type with its summary and every non-private constructor, method and constant. The
 signature is the contract; read the source only when the summary is not enough.
 
+### `class CatalogueGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/CatalogueGameTest.java`
+VV-3: the 16-event line catalogue loads through Minecraft's own resource/datapack system, and a datapack override -- this test module's own fabric/src/gametest/resources, loaded as the villager_voices_gametest mod's data on top of villager_voices's own -- replaces one event's lines entirely (`REACTION-REQ-011`).
+- `void allSixteenEventsLoadFourLinesEach(GameTestHelper helper)`
+- `void theGametestDatapackOverridesRestocksLinesEntirely(GameTestHelper helper)`
+
 ### `class SmokeGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/SmokeGameTest.java`
 VV-1: the mod loads.
 - `void theModLoads(GameTestHelper helper)`

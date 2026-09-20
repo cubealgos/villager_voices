@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Ow! Ow ow ow!",
+      "sound": "villager_voices:reaction.hurt.1"
+    },
+    {
+      "subtitle": "Hngh — that hurt!",
+      "sound": "villager_voices:reaction.hurt.2"
+    },
+    {
+      "subtitle": "Mrgh! Watch it!",
+      "sound": "villager_voices:reaction.hurt.3"
+    },
+    {
+      "subtitle": "Ah! Rude!",
+      "sound": "villager_voices:reaction.hurt.4"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh, morning.",
+      "sound": "villager_voices:reaction.wake.1"
+    },
+    {
+      "subtitle": "Hmm, another day.",
+      "sound": "villager_voices:reaction.wake.2"
+    },
+    {
+      "subtitle": "Ah, well rested.",
+      "sound": "villager_voices:reaction.wake.3"
+    },
+    {
+      "subtitle": "Mmh, let's get to it.",
+      "sound": "villager_voices:reaction.wake.4"
+    }
+  ]
+}

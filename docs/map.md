@@ -15,11 +15,15 @@ signature page before calling into a package you did not write.
 | package | project | types | what |
 |---|---|---|---|
 | `villager_voices` | common | VillagerEventBus, VillagerEventSource, VillagerReactionEvent, VillagerReactionSignal | Pure Java: zero Minecraft, Fabric, or NeoForge imports, enforced by the common module's own verifyLoaderFree build task (docs/spec/04-architecture.md ARCH-DEC-001). |
+| `villager_voices.catalogue` | common | Catalogue, CatalogueCodec, CatalogueLoadException, Line, MiniJson | The data-driven line catalogue (docs/spec/domains/reaction-lines.md, `REACTION-DEC-001`): a pure Java codec for data/villager_voices/reaction/.json, keyed by event id string (e.g. |
 | `villager_voices` | common (test) | VillagerEventBusTest |  |
+| `villager_voices.catalogue` | common (test) | CatalogueCodecTest, CatalogueTest, MiniJsonTest |  |
 | `villager_voices.fabric` | fabric | FabricVillagerEventSource, VillagerVoicesFabric |  |
+| `villager_voices.fabric.catalogue` | fabric | CatalogueReloadListener |  |
 | `villager_voices.fabric.client` | fabric | VillagerVoicesFabricClient |  |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
-| `villager_voices.fabric.gametest` | fabric (gametest) | SmokeGameTest |  |
+| `villager_voices.fabric.catalogue` | fabric (test) | DefaultCatalogueResourcesTest |  |
+| `villager_voices.fabric.gametest` | fabric (gametest) | CatalogueGameTest, SmokeGameTest |  |
 
 | build script | what |
 |---|---|
