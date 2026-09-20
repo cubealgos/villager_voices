@@ -7,7 +7,7 @@ Villagers react to what happens to them, with voices and text.
 | Field | Value |
 |---|---|
 | Name | Wait, they talk now? |
-| Slug | `villager-voices-mod` |
+| Slug | `wait-they-talk-now` |
 | Summary | Villagers react to what happens to them: a short line above your hotbar and a subtitle, for trades, danger, breeding, sleep, raids and more. |
 | Categories | Mobs, Game-Mechanics |
 | Licence | MIT |
