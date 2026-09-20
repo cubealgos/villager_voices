@@ -10,6 +10,16 @@ VV-3: the 16-event line catalogue loads through Minecraft's own resource/datapac
 - `void allSixteenEventsLoadFourLinesEach(GameTestHelper helper)`
 - `void theGametestDatapackOverridesRestocksLinesEntirely(GameTestHelper helper)`
 
+### `class CombatAndStateGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/CombatAndStateGameTest.java`
+VV-5: each of the six combat/state events (docs/spec/domains/reaction.md §3, REACTION-REQ-001) actually fires its native Fabric hook and reaches VillagerVoicesFabric#BUS in a real world, against a real Villager or ZombieVillager entity — no fakes below the bus (docs/spec/operations/testing.md).
+- `void hurtReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`hurt`): LivingEntity.hurtServer → AFTER_DAMAGE.
+- `void killedReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`killed`): LivingEntity.die → AFTER_DEATH.
+- `void zombifiedNamesTheOriginalVillager(GameTestHelper helper)` — REACTION-REQ-001 (`zombified`): Villager.convertTo(ZOMBIE_VILLAGER, ...) → MOB_CONVERSION, direction proof #1 — the signal names the villager being converted (the original), per the ticket, not the zombie villager it becomes.
+- `void curedNamesTheResultingVillager(GameTestHelper helper)` — REACTION-REQ-001 (`cured`): ZombieVillager.convertTo(VILLAGER, ...) → MOB_CONVERSION, direction proof #2 — the signal names the resulting villager, per the ticket, not the zombie villager it was cured from.
+- `void sleepReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`sleep`): LivingEntity.startSleeping → START_SLEEPING.
+- `void wakeReachesTheBus(GameTestHelper helper)` — REACTION-REQ-001 (`wake`): LivingEntity.stopSleeping → STOP_SLEEPING.
+- `void sleepingVillagerSuppressesZombifiedFromTheSink(GameTestHelper helper)` — REACTION-REQ-009 end to end: "the system shall suppress every event except sleep itself while the triggering villager is asleep." Proven against a dedicated, fully configured local bus (its own LineCatalogue/LineSink/clock/roll — VV-3/ VV-7/VV-8's eventual shape, docs/spec/operations/testing.md), since VillagerVoicesFabric#BUS itself has no reaction pipeline configured yet (built with VillagerEventBus's no-argument constructor until those tickets land) and so cannot demonstrate selection being suppressed.
+
 ### `class SmokeGameTest` — `fabric/src/gametest/java/villager_voices/fabric/gametest/SmokeGameTest.java`
 VV-1: the mod loads.
 - `void theModLoads(GameTestHelper helper)`
