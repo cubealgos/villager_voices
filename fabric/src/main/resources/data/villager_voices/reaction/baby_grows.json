@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Ha! Grown up already.",
+      "sound": "villager_voices:reaction.baby_grows.1"
+    },
+    {
+      "subtitle": "Mrgh, my, how time flies.",
+      "sound": "villager_voices:reaction.baby_grows.2"
+    },
+    {
+      "subtitle": "Ah, look at them now.",
+      "sound": "villager_voices:reaction.baby_grows.3"
+    },
+    {
+      "subtitle": "Mmh, all grown up.",
+      "sound": "villager_voices:reaction.baby_grows.4"
+    }
+  ]
+}

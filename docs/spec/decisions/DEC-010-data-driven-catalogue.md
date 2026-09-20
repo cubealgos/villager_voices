@@ -6,9 +6,11 @@ category: "villager_voices"
 
 # `DEC-010` — A data-driven line catalogue for the alpha, not hardcoded
 
-**Status:** proposed by this sheet, to confirm at the first ticket. Not a Kevin ruling — the 16-event
-scope and the line text are Kevin's own brief and this sheet's own writing respectively
-(`domains/reaction-lines.md`); this decision is about how the catalogue is stored and loaded.
+**Status:** confirmed at the first ticket (`VV-3`). Not a Kevin ruling — the 16-event scope and the
+line text are Kevin's own brief and this sheet's own writing respectively
+(`domains/reaction-lines.md`); this decision is about how the catalogue is stored and loaded. The
+codec's exact field names, left open by this sheet, are confirmed in `domains/reaction-lines.md`
+§2.
 
 ## The choice
 

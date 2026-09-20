@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrrgh — traded! Nice.",
+      "sound": "villager_voices:reaction.trade_completed.1"
+    },
+    {
+      "subtitle": "Hmnh, good trade, that.",
+      "sound": "villager_voices:reaction.trade_completed.2"
+    },
+    {
+      "subtitle": "Ha! Emeralds for me.",
+      "sound": "villager_voices:reaction.trade_completed.3"
+    },
+    {
+      "subtitle": "Mmh-hmm, pleasure doing business.",
+      "sound": "villager_voices:reaction.trade_completed.4"
+    }
+  ]
+}

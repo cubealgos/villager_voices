@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Hmm, restocking.",
+      "sound": "villager_voices:reaction.restock.1"
+    },
+    {
+      "subtitle": "Mrgh, more goods, fresh in.",
+      "sound": "villager_voices:reaction.restock.2"
+    },
+    {
+      "subtitle": "Ah, business never sleeps.",
+      "sound": "villager_voices:reaction.restock.3"
+    },
+    {
+      "subtitle": "Mmh, back to work.",
+      "sound": "villager_voices:reaction.restock.4"
+    }
+  ]
+}

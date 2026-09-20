@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh... can I help you?",
+      "sound": "villager_voices:reaction.player_staring.1"
+    },
+    {
+      "subtitle": "Hmm, something the matter?",
+      "sound": "villager_voices:reaction.player_staring.2"
+    },
+    {
+      "subtitle": "Ah, personal space, please.",
+      "sound": "villager_voices:reaction.player_staring.3"
+    },
+    {
+      "subtitle": "Mmh, yes?",
+      "sound": "villager_voices:reaction.player_staring.4"
+    }
+  ]
+}

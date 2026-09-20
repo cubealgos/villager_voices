@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Ah! Ah! Run!",
+      "sound": "villager_voices:reaction.panic.1"
+    },
+    {
+      "subtitle": "Mrgh — danger!",
+      "sound": "villager_voices:reaction.panic.2"
+    },
+    {
+      "subtitle": "Hnngh, get away!",
+      "sound": "villager_voices:reaction.panic.3"
+    },
+    {
+      "subtitle": "Ah, help!",
+      "sound": "villager_voices:reaction.panic.4"
+    }
+  ]
+}

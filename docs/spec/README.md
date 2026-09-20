@@ -109,7 +109,7 @@ first ticket" where it appears.
 | `DEC-007` | The action bar is the primary display channel, with a per-player queue | written |
 | `DEC-008` | Never replace the villager renderer or model; expose talking state via EMF's own API | written |
 | `DEC-009` | Positioning: described on its own terms, no reference product named anywhere | written |
-| `DEC-010` | A data-driven line catalogue for the alpha, not hardcoded; proposed, to confirm at the first ticket | written |
+| `DEC-010` | A data-driven line catalogue for the alpha, not hardcoded; confirmed at the first ticket (`VV-3`) | written |
 
 ## Open questions gathered
 
@@ -130,8 +130,8 @@ first ticket" where it appears.
 - **The exact `UniqueVariableFactory` wiring against EMF's real interface**, and NeoForge 26.2's
   exact `RegisterRenderStateModifiersEvent` package/class names — both flagged unverified by the
   research itself (`domains/compat.md` §7).
-- **The exact catalogue JSON codec field names**, and whether several inferred-not-confirmed hooks
-  (`zombified`, `cured`, NeoForge `sleep`/`wake`) hold against a running server (`domains/reaction.md`
-  §7).
+- **Whether several inferred-not-confirmed hooks** (`zombified`, `cured`, NeoForge `sleep`/`wake`)
+  hold against a running server (`domains/reaction.md` §7) — the catalogue JSON codec field names
+  that used to sit alongside this bullet are confirmed by `VV-3` (`domains/reaction-lines.md` §2).
 - **NeoForge's own licence**, needed before `NOTICE` is complete once the NeoForge module lands
   (`operations/compliance.md`).

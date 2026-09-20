@@ -1,0 +1,8 @@
+{
+  "lines": [
+    { "subtitle": "[gametest override] Restocking, test pack.", "sound": "villager_voices:reaction.restock.1" },
+    { "subtitle": "[gametest override] More goods, test pack.", "sound": "villager_voices:reaction.restock.2" },
+    { "subtitle": "[gametest override] Business never sleeps, test pack.", "sound": "villager_voices:reaction.restock.3" },
+    { "subtitle": "[gametest override] Back to work, test pack.", "sound": "villager_voices:reaction.restock.4" }
+  ]
+}

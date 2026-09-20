@@ -1,0 +1,99 @@
+package villager_voices.catalogue;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class CatalogueCodecTest {
+
+    private static final String TRADE_COMPLETED_JSON = """
+        {
+          "lines": [
+            { "subtitle": "Mrrgh -- traded! Nice.", "sound": "villager_voices:reaction.trade_completed.1" },
+            { "subtitle": "Hmnh, good trade, that.", "sound": "villager_voices:reaction.trade_completed.2" },
+            { "subtitle": "Ha! Emeralds for me.", "sound": "villager_voices:reaction.trade_completed.3" },
+            { "subtitle": "Mmh-hmm, pleasure doing business.", "sound": "villager_voices:reaction.trade_completed.4" }
+          ]
+        }
+        """;
+
+    @Test
+    void parsesFourLinesInFileOrder() {
+        List<Line> lines = CatalogueCodec.parseEventFile("trade_completed", TRADE_COMPLETED_JSON, id -> true);
+        assertEquals(4, lines.size());
+        assertEquals(new Line("Mrrgh -- traded! Nice.", "villager_voices:reaction.trade_completed.1"), lines.get(0));
+        assertEquals(new Line("Mmh-hmm, pleasure doing business.", "villager_voices:reaction.trade_completed.4"), lines.get(3));
+    }
+
+    @Test
+    void rejectsAnEmptyLinesArray() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class,
+            () -> CatalogueCodec.parseEventFile("hurt", "{\"lines\": []}", id -> true));
+        assertTrue(ex.getMessage().contains("at least one line"), ex.getMessage());
+    }
+
+    @Test
+    void rejectsMalformedJson() {
+        assertThrows(CatalogueLoadException.class,
+            () -> CatalogueCodec.parseEventFile("hurt", "not json", id -> true));
+    }
+
+    @Test
+    void rejectsAMissingLinesArray() {
+        assertThrows(CatalogueLoadException.class,
+            () -> CatalogueCodec.parseEventFile("hurt", "{}", id -> true));
+    }
+
+    @Test
+    void rejectsANonObjectTopLevel() {
+        assertThrows(CatalogueLoadException.class,
+            () -> CatalogueCodec.parseEventFile("hurt", "[]", id -> true));
+    }
+
+    @Test
+    void rejectsABlankSubtitle() {
+        assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"  \", \"sound\": \"villager_voices:reaction.hurt.1\"}]}", id -> true));
+    }
+
+    @Test
+    void rejectsASoundIdWithTheWrongShape() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Ow!\", \"sound\": \"villager_voices:hurt.1\"}]}", id -> true));
+        assertTrue(ex.getMessage().contains("villager_voices:hurt.1"), ex.getMessage());
+    }
+
+    @Test
+    void rejectsASoundIdNamingADifferentEvent() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Ow!\", \"sound\": \"villager_voices:reaction.killed.1\"}]}", id -> true));
+        assertTrue(ex.getMessage().contains("killed"), ex.getMessage());
+    }
+
+    @Test
+    void rejectsASoundIdUnknownToTheInjectedRegistryCheck_namingTheId() {
+        // REACTION-REQ-012 / REACTION-FAIL-003: rejected with a clear error naming the missing id,
+        // not silently dropped or a crash. The real SoundEvent registry check is VV-8's territory;
+        // this ticket can only exercise the rejection path with a fake one.
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Ow!\", \"sound\": \"villager_voices:reaction.hurt.1\"}]}",
+            id -> false));
+        assertTrue(ex.getMessage().contains("villager_voices:reaction.hurt.1"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("not a registered SoundEvent"), ex.getMessage());
+    }
+
+    @Test
+    void soundExistsIsConsultedPerId() {
+        String json = "{\"lines\": ["
+            + "{\"subtitle\": \"Ow!\", \"sound\": \"villager_voices:reaction.hurt.1\"},"
+            + "{\"subtitle\": \"Ouch!\", \"sound\": \"villager_voices:reaction.hurt.2\"}]}";
+        // Only .1 is "registered"; .2 must be the one named in the rejection.
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile(
+            "hurt", json, "villager_voices:reaction.hurt.1"::equals));
+        assertTrue(ex.getMessage().contains("villager_voices:reaction.hurt.2"), ex.getMessage());
+    }
+}
