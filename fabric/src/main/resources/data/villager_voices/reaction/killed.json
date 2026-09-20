@@ -13,7 +13,8 @@
     {
       "subtitle": "Wha— no!",
       "sound": "villager_voices:reaction.killed.3",
-      "grunt": "minecraft:entity.villager.death"
+      "grunt": "minecraft:entity.villager.death",
+      "spoken": "What, no!"
     },
     {
       "subtitle": "Argh!",

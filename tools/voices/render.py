@@ -33,6 +33,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -155,6 +156,28 @@ CLONE_POST_CHAINS = {
         "equalizer", "250", "1q", "+3", "equalizer", "3200", "1.5q", "-4",
         "norm", "-3",
     ],
+    # Round six (`AUDIO-DEC-006` amendment): Kevin on round five's clone-of-a-clone reference,
+    # "better, but still robotic" -- the reference is now a public-domain *human* voice instead
+    # (a public-domain human clip, still built by `reference.build_reference_wav`'s `lowpass_hz`/
+    # `norm -3`, the vanilla grunt reference is dropped), so
+    # post-processing's job changes from "de-metal a clone of a clone" to "add back a mild villager
+    # character on top of a clean human voice". `villager_mild`: a nasal lift centred lower than
+    # round four/five's 1600/3200Hz bands (this is a *human* voice now, not a clone already carrying
+    # some of that colour), a much smaller cut, a gentle lowpass, and a touch more low end -- nasal
+    # without metallic.
+    "villager_mild": [
+        "equalizer", "1200", "1q", "+3", "equalizer", "2600", "1.5q", "-3",
+        "lowpass", "6000", "bass", "+2",
+        "norm", "-3",
+    ],
+    # `villager_mild` plus a small pitch shift down -- the only round-six chain that reaches for
+    # `pitch` at all, kept separate so `villager_mild`'s own effect is measurable on its own.
+    "villager_pitch": [
+        "pitch", "-150",
+        "equalizer", "1200", "1q", "+3", "equalizer", "2600", "1.5q", "-3",
+        "lowpass", "6000", "bass", "+2",
+        "norm", "-3",
+    ],
 }
 
 # Candidates for the sample round (tools/voices/VOICES.md has the full licence record).
@@ -179,9 +202,12 @@ SAMPLE_LINE_IDS = ("trade_completed.1", "hurt.2", "panic.2")
 
 # --- Catalogue -----------------------------------------------------------------------------------
 
-def load_catalogue() -> dict[str, str]:
-    """line_id (e.g. "trade_completed.1") -> subtitle, from the 16 catalogue JSON files."""
-    lines: dict[str, str] = {}
+def load_catalogue_entries() -> dict[str, dict]:
+    """line_id (e.g. "trade_completed.1") -> the full catalogue entry dict (at least "subtitle";
+    "grunt" and "spoken" only when present), from the 16 catalogue JSON files. `load_catalogue` is
+    the subtitle-only view most callers want; `derive_input_text`'s callers use this one for the
+    optional "spoken" override (VV-11 round six, `AUDIO-DEC-006` amendment)."""
+    entries: dict[str, dict] = {}
     for path in sorted(CATALOGUE_DIR.glob("*.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
         for entry in data["lines"]:
@@ -190,23 +216,132 @@ def load_catalogue() -> dict[str, str]:
             if not sound.startswith(prefix):
                 raise ValueError(f"{path}: unexpected sound id {sound!r}")
             line_id = sound[len(prefix):]
-            lines[line_id] = entry["subtitle"]
-    return lines
+            entries[line_id] = entry
+    return entries
+
+
+def load_catalogue() -> dict[str, str]:
+    """line_id (e.g. "trade_completed.1") -> subtitle, from the 16 catalogue JSON files."""
+    return {line_id: entry["subtitle"] for line_id, entry in load_catalogue_entries().items()}
 
 
 # --- Input text -------------------------------------------------------------------------------------
+#
+# Round six (`AUDIO-DEC-006` amendment): Kevin on round five's clone-of-a-clone timbre: "better, but
+# still robotic; also they can't pronounce stuff like 'ouuchh' properly, sounds like letter salad."
+# `AUDIO-DEC-004`'s "the subtitle itself, verbatim" is retired as a blanket rule — most lines are
+# still spoken exactly as written (the villager phrasing already reads as plain English), but a line
+# whose subtitle spelling is expressive rather than plainly pronounceable now gets help: either an
+# explicit catalogue `"spoken"` override (a human already decided the right TTS input) or this
+# module's own general fallback normaliser, never the raw spelling unmodified.
 
-def derive_input_text(line_id: str, subtitle: str) -> str:
-    """The per-line Piper input: the subtitle itself, plain English, verbatim (audio.md §3 "Input",
-    `AUDIO-DEC-004`). Round 1 fed Piper a scrambled nonsense/CV-syllable string instead — Kevin's
-    ruling on hearing it: "they're all shit, I can't understand a single thing." The subtitle's own
-    villager interjections ("Mrrgh", "Hmnh", "Ah", ...) already carry the character; this function
-    is deliberately a no-op (kept, not inlined, so call sites read the same as round 1's and so a
-    future line-specific adjustment has one place to land) — `line_id` is unused but kept in the
-    signature for that reason.
+VOWELS = frozenset("aeiouAEIOU")
+
+# Canonical spoken forms for a villager's stock interjections and every expressive misspelling of
+# them found while reading through the catalogue (or plausible enough to guard against) — case-
+# insensitive, punctuation-insensitive whole-word match. Most of the catalogue's actual interjections
+# ("Ha!", "Hmm,", "Ah,") are already spelled exactly as their own canonical form, so this table is a
+# no-op identity match for them and only actually changes text for a genuine misspelling.
+INTERJECTION_TABLE: dict[str, str] = {
+    "ow": "Ow",
+    "owww": "Ow",
+    "ouch": "Ouch",
+    "ouuch": "Ouch",
+    "ouuchh": "Ouch",
+    "ouchh": "Ouch",
+    "ah": "Ah",
+    "ahh": "Ah",
+    "hmm": "Hmm",
+    "hm": "Hmm",
+    "hmnh": "Hmm",
+    "mm-hmm": "Mm-hmm",
+    "mmh-hmm": "Mm-hmm",
+    "mmhmm": "Mm-hmm",
+    "ha": "Ha",
+    "haha": "Ha",
+    "psh": "Psh",
+    # "Grr" -> "Grrr": not a collapse, an *expansion* -- round six found "Grr" alone renders too
+    # short/clipped on this engine, "Grrr" reads as an actual growl (`tools/voices/VOICES.md`
+    # "Round 6", empirically checked before this table entry was added, per the ticket's own "only
+    # if it renders" condition).
+    "grr": "Grrr",
+}
+_INTERJECTION_RE = re.compile(
+    r"\b(" + "|".join(sorted((re.escape(k) for k in INTERJECTION_TABLE), key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _apply_interjection_table(text: str) -> str:
+    """Substitutes a matched word for its canonical spoken form, preserving the matched word's own
+    capitalization (lowercase mid-sentence stays lowercase) rather than forcing the table's own
+    Title-case storage everywhere -- case doesn't affect a TTS engine's pronunciation, so there's no
+    reason to touch it beyond what the actual respelling requires."""
+    def _sub(match: re.Match) -> str:
+        original = match.group(0)
+        canonical = INTERJECTION_TABLE[original.lower()]
+        return canonical if original[0].isupper() else canonical.lower()
+    return _INTERJECTION_RE.sub(_sub, text)
+
+
+def _collapse_letter_runs(text: str) -> str:
+    """A run of 3+ identical letters (only a run that long -- English spells plenty of real words
+    and already-working interjections with a legitimate *double*, "good", "off", "Hmm" itself, so
+    this never touches those) collapses to 2 if it's a consonant ("Owwwww" -> "Oww"), or straight to
+    1 if it's a vowel ("Nooooo" -> "No") -- a single pass, so a pre-existing double is never at risk
+    of being re-matched by a second one."""
+    def _replace(match: re.Match) -> str:
+        letter = match.group(1)
+        return letter if letter in VOWELS else letter * 2
+    return re.sub(r"(.)\1{2,}", _replace, text)
+
+
+def _strip_repeated_punctuation(text: str) -> str:
+    """A run of 2+ identical punctuation marks collapses to one -- "??" -> "?", "..." -> "." -- so
+    the TTS input reads as a single clean mark rather than one it might try to voice literally."""
+    return re.sub(r"([!?.,])\1+", r"\1", text)
+
+
+def _normalize_dashes(text: str) -> str:
+    """A written interruption/trail-off (an em dash, "Ah— not now.", "No—!") doesn't phonemize
+    reliably as punctuation -- read as a soft comma-pause when more text follows, dropped entirely
+    at the end of a clause (where the sentence's own closing punctuation already carries the stop)."""
+    text = re.sub(r"\s*—\s*(?=\w)", ", ", text)
+    text = re.sub(r"\s*—\s*", "", text)
+    return text
+
+
+def normalize_spoken_text(text: str) -> str:
+    """The default TTS-input transform for a catalogue line with no explicit `spoken` override
+    (`derive_input_text`): a written interruption dash is turned into a pause or dropped
+    (`_normalize_dashes`), overlong letter runs collapse (`_collapse_letter_runs` -- run first so a
+    letter-run misspelling of a known interjection, e.g. "Ouuuch", is already in a shape the table
+    below recognizes), known interjection spellings map to a canonical form (`INTERJECTION_TABLE`),
+    and repeated punctuation collapses to one mark (`_strip_repeated_punctuation`). A line whose
+    subtitle needs more than this — a genuinely truncated word fragment ("Wha—"), a non-pronounceable
+    spelling ("Zzz.") — gets an explicit catalogue `"spoken"` field instead, which bypasses this
+    function entirely (`derive_input_text`)."""
+    text = _normalize_dashes(text)
+    text = _collapse_letter_runs(text)
+    text = _apply_interjection_table(text)
+    text = _strip_repeated_punctuation(text)
+    return text
+
+
+def derive_input_text(line_id: str, subtitle: str, spoken: str | None = None) -> str:
+    """The per-line TTS input. Round six (`AUDIO-DEC-006` amendment): a catalogue line's explicit
+    `spoken` override, if present, is used verbatim (a human already decided the right words); a
+    line without one falls back to `normalize_spoken_text(subtitle)` rather than the subtitle
+    completely unmodified — round 1's ruling against a *distinct nonsense/CV-syllable* input
+    (`AUDIO-DEC-004`) still stands, this is a much smaller, targeted normalization, not that. Most
+    of the catalogue's 64 subtitles are already plainly pronounceable, so `normalize_spoken_text` is
+    a no-op for them. `line_id` is unused but kept in the signature so call sites read the same
+    regardless of which line they're deriving text for.
     """
-    del line_id  # unused: the transform no longer varies by line identity, only by subtitle.
-    return subtitle
+    del line_id
+    if spoken is not None:
+        return spoken
+    return normalize_spoken_text(subtitle)
 
 
 # --- Piper + sox -----------------------------------------------------------------------------------
@@ -350,7 +485,8 @@ def run_sample(
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
     temperature: float = DEFAULT_TEMPERATURE,
 ) -> None:
-    catalogue = load_catalogue()
+    entries = load_catalogue_entries()
+    catalogue = {line_id: entry["subtitle"] for line_id, entry in entries.items()}
     out_dir.mkdir(parents=True, exist_ok=True)
     if engine == "piper":
         header = [
@@ -381,7 +517,7 @@ def run_sample(
         for chain in chains:
             for line_id in SAMPLE_LINE_IDS:
                 subtitle = catalogue[line_id]
-                text = derive_input_text(line_id, subtitle)
+                text = derive_input_text(line_id, subtitle, entries[line_id].get("spoken"))
                 if engine == "piper":
                     out_ogg = out_dir / model / f"{line_id}.{chain}.ogg"
                     print(f"rendering {model}/{line_id}.{chain}.ogg  ({text!r})")
@@ -420,10 +556,11 @@ def run_batch(
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
     temperature: float = DEFAULT_TEMPERATURE,
 ) -> None:
-    catalogue = load_catalogue()
+    entries = load_catalogue_entries()
+    catalogue = {line_id: entry["subtitle"] for line_id, entry in entries.items()}
     for line_id, subtitle in sorted(catalogue.items()):
         event, n = line_id.rsplit(".", 1)
-        text = derive_input_text(line_id, subtitle)
+        text = derive_input_text(line_id, subtitle, entries[line_id].get("spoken"))
         out_ogg = SHIPPED_SOUNDS_DIR / f"{event}_{n}.ogg"
         print(f"rendering {out_ogg.relative_to(REPO_ROOT)}  ({text!r})")
         render_line(

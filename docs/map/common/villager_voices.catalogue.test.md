@@ -20,6 +20,10 @@ signature is the contract; read the source only when the summary is not enough.
 - `void parsesALineWithoutAGruntAsNull()`
 - `void rejectsABlankGrunt()`
 - `void rejectsAMalformedGruntId()`
+- `void parsesALineWithASpokenOverride()`
+- `void parsesALineWithoutASpokenOverrideAsNull()`
+- `void rejectsABlankSpokenOverride()`
+- `void aGruntAndASpokenOverrideCoexist()`
 
 ### `class CatalogueTest` — `common/src/test/java/villager_voices/catalogue/CatalogueTest.java`
 - `void linesForAnUnloadedEventIsEmpty()`

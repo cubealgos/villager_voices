@@ -13,7 +13,8 @@
     {
       "subtitle": "Zzz.",
       "sound": "villager_voices:reaction.sleep.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "spoken": "Shh."
     },
     {
       "subtitle": "Ahh, rest at last.",

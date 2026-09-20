@@ -18,24 +18,100 @@ import render  # noqa: E402
 
 
 class DeriveInputTextTest(unittest.TestCase):
-    """`derive_input_text` is a no-op since `AUDIO-DEC-004` (round 1's nonsense/CV-syllable
-    transform was rejected outright — unintelligible); these tests pin that down so nobody
-    reintroduces scrambling by accident."""
+    """`derive_input_text` never scrambles into nonsense/CV-syllables (`AUDIO-DEC-004` still
+    stands) — but since round six (`AUDIO-DEC-006` amendment, Kevin: "they can't pronounce stuff
+    like 'ouuchh' properly, sounds like letter salad") it is no longer a strict verbatim no-op: an
+    explicit `spoken` override wins outright, and a line without one is run through
+    `normalize_spoken_text`, which is itself a no-op for a subtitle that's already plainly
+    pronounceable."""
 
-    def test_returns_the_subtitle_verbatim(self):
-        subtitle = "Mrrgh — traded! Nice."
-        self.assertEqual(render.derive_input_text("trade_completed.1", subtitle), subtitle)
+    def test_an_explicit_spoken_override_wins_outright(self):
+        # Deliberately a string normalize_spoken_text would itself change, to prove the override
+        # bypasses it rather than being run through it too.
+        self.assertEqual(render.derive_input_text("sleep.3", "Zzz.", "Shh."), "Shh.")
+
+    def test_no_override_falls_back_to_the_normalizer(self):
+        self.assertEqual(
+            render.derive_input_text("trade_completed.2", "Hmnh, good trade, that."),
+            render.normalize_spoken_text("Hmnh, good trade, that."),
+        )
+
+    def test_already_plain_subtitle_is_unchanged_by_the_fallback(self):
+        subtitle = "That hurt!"
+        self.assertEqual(render.derive_input_text("hurt.2", subtitle), subtitle)
 
     def test_ignores_line_id(self):
         subtitle = "Hmnh, good trade, that."
         text_a = render.derive_input_text("trade_completed.2", subtitle)
         text_b = render.derive_input_text("some_other.9", subtitle)
         self.assertEqual(text_a, text_b)
-        self.assertEqual(text_a, subtitle)
 
-    def test_matches_every_catalogue_line_s_own_subtitle(self):
-        for line_id, subtitle in render.load_catalogue().items():
-            self.assertEqual(render.derive_input_text(line_id, subtitle), subtitle)
+    def test_matches_every_catalogue_line_s_own_spoken_form(self):
+        # Every line either has an explicit "spoken" (used verbatim) or falls back to the
+        # normalizer -- this pins down that derive_input_text never does anything a third thing.
+        for line_id, entry in render.load_catalogue_entries().items():
+            expected = entry.get("spoken") or render.normalize_spoken_text(entry["subtitle"])
+            self.assertEqual(render.derive_input_text(line_id, entry["subtitle"], entry.get("spoken")), expected)
+
+
+class NormalizeSpokenTextTest(unittest.TestCase):
+    """The round-six (`AUDIO-DEC-006` amendment) fallback normalizer: interjection-table lookup,
+    letter-run collapse, em-dash handling, repeated-punctuation stripping."""
+
+    def test_plain_text_is_unchanged(self):
+        self.assertEqual(render.normalize_spoken_text("That hurt!"), "That hurt!")
+
+    def test_known_interjection_already_correct_is_unchanged(self):
+        for word in ("Ha!", "Hmm,", "Ah,", "Ow!"):
+            self.assertEqual(render.normalize_spoken_text(word), word)
+
+    def test_misspelled_interjection_maps_to_canonical_form(self):
+        self.assertEqual(render.normalize_spoken_text("Hmnh, good trade, that."), "Hmm, good trade, that.")
+        self.assertEqual(render.normalize_spoken_text("Mmh-hmm, pleasure doing business."), "Mm-hmm, pleasure doing business.")
+        self.assertEqual(render.normalize_spoken_text("Ouuchh!"), "Ouch!")
+
+    def test_interjection_lookup_is_case_insensitive_but_preserves_case(self):
+        self.assertEqual(render.normalize_spoken_text("hmnh, quiet now."), "hmm, quiet now.")
+        self.assertEqual(render.normalize_spoken_text("Hmnh, quiet now."), "Hmm, quiet now.")
+
+    def test_letter_run_of_three_or_more_consonants_collapses_to_two(self):
+        self.assertEqual(render.normalize_spoken_text("Owwwww!"), "Oww!")
+
+    def test_letter_run_of_three_or_more_vowels_collapses_to_one(self):
+        self.assertEqual(render.normalize_spoken_text("Nooooo!"), "No!")
+
+    def test_a_pre_existing_double_letter_is_never_touched(self):
+        # The bug this test guards against: an earlier version of the collapse rule matched *any*
+        # doubled vowel anywhere, not just a 3+ run, and turned "good"/"look" into "god"/"lok".
+        for word in ("good", "look", "been", "feet", "off", "all", "less", "Hmm"):
+            self.assertEqual(render.normalize_spoken_text(word), word)
+
+    def test_em_dash_mid_line_becomes_a_comma_pause(self):
+        self.assertEqual(render.normalize_spoken_text("Ah— not now."), "Ah, not now.")
+
+    def test_em_dash_at_end_of_clause_is_dropped(self):
+        self.assertEqual(render.normalize_spoken_text("No—!"), "No!")
+
+    def test_repeated_punctuation_collapses_to_one_mark(self):
+        self.assertEqual(render.normalize_spoken_text("Cold..."), "Cold.")
+        self.assertEqual(render.normalize_spoken_text("What??"), "What?")
+
+    def test_idempotent(self):
+        # Running the normalizer twice should never change its own output further.
+        for text in ("Hmnh, good trade, that.", "Ah— not now.", "Owwwww!", "Nooooo!", "Cold..."):
+            once = render.normalize_spoken_text(text)
+            twice = render.normalize_spoken_text(once)
+            self.assertEqual(once, twice)
+
+
+class InterjectionTableTest(unittest.TestCase):
+    def test_every_value_is_one_of_the_seven_canonical_forms(self):
+        canonical = {"Ow", "Ouch", "Ah", "Hmm", "Mm-hmm", "Ha", "Psh", "Grrr"}
+        self.assertTrue(set(render.INTERJECTION_TABLE.values()) <= canonical)
+
+    def test_every_key_is_lowercase(self):
+        for key in render.INTERJECTION_TABLE:
+            self.assertEqual(key, key.lower(), f"{key!r} should be stored lowercase")
 
 
 class SoxChainsTest(unittest.TestCase):
@@ -119,6 +195,30 @@ class LoadCatalogueTest(unittest.TestCase):
                 render.CATALOGUE_DIR = original
 
 
+class LoadCatalogueEntriesTest(unittest.TestCase):
+    """`load_catalogue_entries` (VV-11 round six) -- the full-entry view `load_catalogue` (subtitle
+    only) is now a thin wrapper over."""
+
+    def test_matches_load_catalogue_on_subtitle(self):
+        entries = render.load_catalogue_entries()
+        catalogue = render.load_catalogue()
+        self.assertEqual({lid: e["subtitle"] for lid, e in entries.items()}, catalogue)
+
+    def test_sleep_3_has_the_expected_spoken_override(self):
+        entries = render.load_catalogue_entries()
+        self.assertEqual(entries["sleep.3"]["subtitle"], "Zzz.")
+        self.assertEqual(entries["sleep.3"].get("spoken"), "Shh.")
+
+    def test_killed_3_has_the_expected_spoken_override(self):
+        entries = render.load_catalogue_entries()
+        self.assertEqual(entries["killed.3"].get("spoken"), "What, no!")
+
+    def test_most_lines_have_no_spoken_override(self):
+        entries = render.load_catalogue_entries()
+        with_override = [lid for lid, e in entries.items() if e.get("spoken")]
+        self.assertEqual(sorted(with_override), ["killed.3", "sleep.3"])
+
+
 class DeriveSeedTest(unittest.TestCase):
     """`derive_seed` (`AUDIO-REQ-006`): the clone engine's deterministic torch seed, hashed from the
     line id alone so the batch is reproducible without a hand-maintained seed table."""
@@ -175,6 +275,29 @@ class ClonePostChainsTest(unittest.TestCase):
         self.assertNotIn("reverb", plain)
         self.assertNotIn("highpass", plain)
         self.assertIn("equalizer", plain)
+
+    def test_round_six_villager_chains_present(self):
+        # AUDIO-DEC-006 amendment: a human-voice reference now supplies the base timbre, so
+        # "villager_mild"/"villager_pitch" only add back a mild villager character on top.
+        for name in ("villager_mild", "villager_pitch"):
+            self.assertIn(name, render.CLONE_POST_CHAINS)
+            self.assertIn("norm", render.CLONE_POST_CHAINS[name])
+
+    def test_villager_pitch_is_villager_mild_plus_a_pitch_shift(self):
+        mild = render.CLONE_POST_CHAINS["villager_mild"]
+        pitch = render.CLONE_POST_CHAINS["villager_pitch"]
+        self.assertNotIn("pitch", mild)
+        self.assertEqual(pitch[:2], ["pitch", "-150"])
+        self.assertEqual(pitch[2:], mild)
+
+    def test_villager_mild_bands_are_lower_and_gentler_than_round_four_five(self):
+        # Round four/five's clone-of-a-clone chains centred their nasal lift/cut at 1600/3200Hz with
+        # a +9/-4 swing; round six's human-voice-based chain is centred lower (1200/2600Hz) and
+        # much gentler (+3/-3), since the reference itself is no longer contributing the metallic
+        # edge those chains had to fight.
+        mild = render.CLONE_POST_CHAINS["villager_mild"]
+        self.assertEqual(mild[:4], ["equalizer", "1200", "1q", "+3"])
+        self.assertEqual(mild[4:8], ["equalizer", "2600", "1.5q", "-3"])
 
 
 class ChainsForEngineTest(unittest.TestCase):

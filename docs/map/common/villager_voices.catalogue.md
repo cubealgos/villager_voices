@@ -26,9 +26,10 @@ Decodes one data/villager_voices/reaction/.json file's text into its Lines (docs
 Thrown when a catalogue file fails to load: malformed JSON, a shape that doesn't match §2, a sound id that doesn't follow villager_voices:reaction.., or a sound id naming a SoundEvent that isn't registered.
 - `CatalogueLoadException(String message)`
 
-### `record Line(String text, String soundId, String grunt)` — `common/src/main/java/villager_voices/catalogue/Line.java`
+### `record Line(String text, String soundId, String grunt, String spoken)` — `common/src/main/java/villager_voices/catalogue/Line.java`
 One catalogue entry: the subtitle text a player sees, the id of the SoundEvent it plays, e.g.
-- `Line(String text, String soundId)` — No grunt (VV-3's original shape, before VV-18 added the optional field).
+- `Line(String text, String soundId)` — No grunt, no spoken override (VV-3's original shape, before VV-18/VV-11 round six added them).
+- `Line(String text, String soundId, String grunt)` — No spoken override (VV-18's shape, before VV-11 round six added the field).
 
 ### `class MiniJson` — `common/src/main/java/villager_voices/catalogue/MiniJson.java`
 A small hand-written JSON reader for this module's own fixed shapes (the reaction catalogue files, the lang file).

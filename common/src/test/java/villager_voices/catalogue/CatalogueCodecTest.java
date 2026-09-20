@@ -134,4 +134,46 @@ class CatalogueCodecTest {
             id -> true));
         assertTrue(ex.getMessage().contains("not a namespaced id") || ex.getMessage().contains("grunt id"), ex.getMessage());
     }
+
+    // VV-11 round six: the optional "spoken" field (AUDIO-DEC-006 amendment) -- the voice
+    // pipeline's generator-only TTS input override for an expressively spelled subtitle.
+
+    @Test
+    void parsesALineWithASpokenOverride() {
+        List<Line> lines = CatalogueCodec.parseEventFile("sleep",
+            "{\"lines\": [{\"subtitle\": \"Zzz.\", \"sound\": \"villager_voices:reaction.sleep.3\", "
+                + "\"spoken\": \"Shh.\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("Shh.", lines.get(0).spoken());
+        assertEquals("Zzz.", lines.get(0).text());
+    }
+
+    @Test
+    void parsesALineWithoutASpokenOverrideAsNull() {
+        List<Line> lines = CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals(null, lines.get(0).spoken());
+    }
+
+    @Test
+    void rejectsABlankSpokenOverride() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", \"spoken\": \"  \"}]}",
+            id -> true));
+        assertTrue(ex.getMessage().contains("spoken"), ex.getMessage());
+    }
+
+    @Test
+    void aGruntAndASpokenOverrideCoexist() {
+        List<Line> lines = CatalogueCodec.parseEventFile("killed",
+            "{\"lines\": [{\"subtitle\": \"Wha-- no!\", \"sound\": \"villager_voices:reaction.killed.3\", "
+                + "\"grunt\": \"minecraft:entity.villager.hurt\", \"spoken\": \"What, no!\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("minecraft:entity.villager.hurt", lines.get(0).grunt());
+        assertEquals("What, no!", lines.get(0).spoken());
+    }
 }

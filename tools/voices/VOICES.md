@@ -226,3 +226,54 @@ generation settings across all 6 sample lines at chain `warm`; group C compares 
 (each file's 2.5-5kHz/150-600kHz ratio next to round four's `all` ratio for the same line), and
 Kevin's pick are in `voices-samples-5/README.md` (scratchpad, not committed) and the VV-11
 round-five report.
+
+## Round 6: a human voice, not a vanilla clip (`AUDIO-DEC-006` amendment)
+
+Kevin on round five: "better, but still robotic; also they can't pronounce stuff like 'ouuchh'
+properly, sounds like letter salad." Two separate fixes: the reference and the input text
+(`docs/spec/domains/audio.md` §3 "Reference"/"Input", `AUDIO-DEC-006`'s round-six amendment).
+
+### References — source, licence, speaker id
+
+Three public-domain/CC0 clips, each normalized (`norm -3`) and lightly lowpassed (`lowpass 7000`,
+`reference.build_reference_wav`'s existing `lowpass_hz` parameter — no new reference.py code was
+needed, it already builds a reference from an arbitrary list of source clips). None of these files
+is committed or redistributed; built in the scratchpad, gitignored.
+
+| Name | Source | Licence | Speaker | Detail |
+|---|---|---|---|---|
+| `joe_chat` | [OHF-Voice/voice-datasets](https://github.com/OHF-Voice/voice-datasets) (Nabu Casa, Home Assistant "Year of Voice"), `en_US-joe` release zip, `3000000001_3000000300_Chat` category (conversational utterances, not read-aloud) | **CC0** (public domain; repo's own `README.md`: "These datasets are licensed under CC0") | Anonymous crowdsourced volunteer, dataset name "joe" (`en_US`, the same dataset `en_US-joe-medium`'s Piper voice was trained from — round 1-3's `VOICES.md` entry) | 6 concatenated utterance clips (`3000000001`/`002`/`003`/`006`/`007`/`015.webm`, decoded via `ffmpeg`), 150ms silence between, ~26s total |
+| `giordano` | [LibriVox](https://librivox.org/) recording of Dostoyevsky's *Short Stories*, ch. 1 "An Honest Thief" (`https://www.archive.org/download/dostoyevskyshortstories_1310_librivox/shortstories_01_dostoyevsky_64kb.mp3`), found via LibriVox's own JSON API (`/api/feed/audiobooks/?id=7724&extended=1`, which names the reader per section) | **Public domain** (LibriVox recordings are dedicated to the public domain; source text itself is 19th-century, public domain) | Greg Giordano (LibriVox reader id 8011) | One continuous 25s clip, 30s-55s into the chapter (skips any intro) |
+| `pirie` | LibriVox, same book, ch. 3 "An Unpleasant Predicament" pt. 1 (`.../shortstories_03_dostoyevsky_64kb.mp3`) | **Public domain** (LibriVox) | Bruce Pirie (LibriVox reader id 3699) | One continuous 25s clip, 30s-55s into the chapter |
+
+Mozilla Common Voice was considered and rejected per the ticket's own steer (CC0 but noisy —
+crowdsourced single-sentence clips recorded on arbitrary hardware, no consistent quality bar).
+`kristin`/`norman` (Piper's other public-domain LibriVox-sourced voices, `VOICES.md`'s original
+table) were not reused directly here since their own underlying LibriVox source recordings needed
+independent lookup either way — `giordano`/`pirie` serve the same "warm, mid-to-low-register male,
+public domain" brief from readable, directly-fetchable LibriVox chapter files.
+
+### Villager EQ chains (post-generation only, `render.py`'s `CLONE_POST_CHAINS`)
+
+`villager_mild`: `equalizer 1200 1q +3 equalizer 2600 1.5q -3 lowpass 6000 bass +2 norm -3` — a
+nasal lift and a small cut, centred lower and much gentler than round four/five's chains (1600/
+3200Hz, +9/-4 swings), since the reference is a clean human voice now, not something that needs
+de-metalling. `villager_pitch`: the same tail with `pitch -150` added. `soft` (round five's chain,
+unchanged) stays in as the control.
+
+### The `Grr` → `Grrr` interjection-table entry — "only if it renders"
+
+Checked empirically before adding the entry (`render.py`'s `INTERJECTION_TABLE`): both `"Grr!"` and
+`"Grrr!"` render as a bounded, non-trivial 1.12s clip on this engine/reference/settings combination
+(CPU, `joe_chat` reference, exag 0.3/cfg 0.5/temp 1.1) — neither silence nor a runaway length, so
+the round-six ruling that "Grr" should expand to "Grrr" (a more sustained growl) is kept. No
+catalogue line currently uses "Grr" — the entry is precautionary, for a future line.
+
+### Samples
+
+24 files (group A: 3 references × the 6 round-four/five sample lines × `villager_mild`; group B:
+the best-measured reference × `villager_mild` × `hurt.1` plus the two lines with an explicit
+`spoken` override this round added, `sleep.3`/`killed.3`; group C: the best reference × `soft`/
+`villager_pitch` on `hurt.1` and `killed.3`) plus 3 grunt-spliced previews. Ratio table, duration
+sanity check for the interjection-heavy lines, and Kevin's pick are in `voices-samples-6/README.md`
+(scratchpad, not committed) and the VV-11 round-six report.
