@@ -15,11 +15,22 @@ public final class VillagerVoicesFabric implements ModInitializer {
     public static final String MOD_ID = "villager_voices";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+    /**
+     * The bus every discovered {@link VillagerEventSource} was wired into at mod init (VV-4).
+     * Exposed, not just a local variable, for two reasons: game tests
+     * (fabric/src/gametest, docs/spec/operations/testing.md's "Game tests" row) need to
+     * {@link VillagerEventBus#subscribe} a test collector onto the exact bus the mixins and native
+     * listeners publish into — those hooks are compiled-in and always publish through this one
+     * instance, so a test cannot substitute its own bus; and VV-7/VV-8 will attach the real
+     * {@code LineSink}/catalogue/clock/roll here once they land.
+     */
+    public static VillagerEventBus BUS;
+
     @Override
     public void onInitialize() {
-        VillagerEventBus bus = new VillagerEventBus();
+        BUS = new VillagerEventBus();
         for (VillagerEventSource source : VillagerEventBus.discoverSources()) {
-            source.register(bus);
+            source.register(BUS);
         }
         LOGGER.info("Wait, they talk now? ready");
     }

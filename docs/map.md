@@ -18,8 +18,10 @@ signature page before calling into a package you did not write.
 | `villager_voices` | common (test) | LineSelectorTest, ReactionRulesTest, VillagerEventBusReactionTest, VillagerEventBusTest |  |
 | `villager_voices.fabric` | fabric | FabricVillagerEventSource, VillagerVoicesFabric |  |
 | `villager_voices.fabric.client` | fabric | VillagerVoicesFabricClient |  |
+| `villager_voices.fabric.events` | fabric | Signals, TradeAndSocialEvents |  |
+| `villager_voices.fabric.mixin` | fabric | BabyGrowsMixin, BellRingMixin, BreedingMixin, LevelUpMixin, RaidStartMixin, RestockMixin, TradeCompletedMixin |  |
 | `villager_voices.fabric` | fabric (test) | SourceSurfaceTest |  |
-| `villager_voices.fabric.gametest` | fabric (gametest) | SmokeGameTest |  |
+| `villager_voices.fabric.gametest` | fabric (gametest) | SmokeGameTest, TradeAndSocialGameTest |  |
 
 | build script | what |
 |---|---|
