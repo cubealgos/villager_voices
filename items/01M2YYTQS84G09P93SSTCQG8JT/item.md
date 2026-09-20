@@ -32,15 +32,15 @@ before wiring, since the original research only confirmed this from docs, not so
 
 ## Acceptance criteria
 
-- [ ] The talking-state flag is true for exactly the duration of a playing reaction sound and false
+- [x] The talking-state flag is true for exactly the duration of a playing reaction sound and false
       otherwise, verified per loader (`COMPAT-REQ-002`).
-- [ ] With EMF installed, `villager_voices.is_talking` reads true for the duration of a playing line
+- [x] With EMF installed, `villager_voices.is_talking` reads true for the duration of a playing line
       via EMF's own debug/animation-variable inspector or a minimal test resource pack
       (`docs/spec/operations/testing.md` "Client checklist").
-- [ ] With EMF absent, the flag is still set and copied into the render state but read by nothing —
+- [x] With EMF absent, the flag is still set and copied into the render state but read by nothing —
       zero crash, zero behavioural difference otherwise (`COMPAT-FAIL-001`).
-- [ ] With ETF installed, no crash, no texture change caused by this mod (`compat.md` §3).
-- [ ] No renderer, model, or `EntityRenderState` subclass exists anywhere in this change
+- [x] With ETF installed, no crash, no texture change caused by this mod (`compat.md` §3).
+- [x] No renderer, model, or `EntityRenderState` subclass exists anywhere in this change
       (`COMPAT-REQ-001`, `ARCH-DEC-004`) — enforceable the same way `verifyLoaderFree` enforces
       `common`'s own boundary, if a comparable check is worth adding here.
 
