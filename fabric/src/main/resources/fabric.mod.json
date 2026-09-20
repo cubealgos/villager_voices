@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "villager_voices",
+  "version": "${version}",
+  "name": "Wait, they talk now?",
+  "description": "Villagers react to what happens to them, with voices and text.",
+  "authors": [
+    "Cube Algos"
+  ],
+  "contact": {
+    "sources": "https://git.cubealgos.de/cubealgos/villager_voices",
+    "issues": "https://github.com/cubealgos/villager_voices/issues"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "villager_voices.fabric.VillagerVoicesFabric"
+    ],
+    "client": [
+      "villager_voices.fabric.client.VillagerVoicesFabricClient"
+    ]
+  },
+  "mixins": [
+    "villager_voices.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.161.0"
+  }
+}
