@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh! Raid! Raid!",
+      "sound": "villager_voices:reaction.raid_bell.1"
+    },
+    {
+      "subtitle": "Hnngh — take cover!",
+      "sound": "villager_voices:reaction.raid_bell.2"
+    },
+    {
+      "subtitle": "Ah! Not again!",
+      "sound": "villager_voices:reaction.raid_bell.3"
+    },
+    {
+      "subtitle": "Everyone, hide!",
+      "sound": "villager_voices:reaction.raid_bell.4"
+    }
+  ]
+}

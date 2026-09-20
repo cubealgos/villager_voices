@@ -13,6 +13,14 @@ signature is the contract; read the source only when the summary is not enough.
 - `void singleLineCatalogueRepeatsWhenExcludingItLeavesNothing()`
 - `void lastPlayedNotPresentInEligibleIsHarmless()`
 
+### `class PanicDetectorTest` — `common/src/test/java/villager_voices/PanicDetectorTest.java`
+- `void firstPanicTickFires()`
+- `void staysCalmNeverFires()`
+- `void steadyPanicFiresOnlyOnce()`
+- `void panicEndingThenRestartingFiresAgain()`
+- `void oneRapidFlickerPerTickFiresEveryRisingEdge()`
+- `void panicIsIndependentPerVillager()`
+
 ### `class ReactionRulesTest` — `common/src/test/java/villager_voices/ReactionRulesTest.java`
 - `void perEventCooldownSuppressesWithinWindow()`
 - `void perEventCooldownAllowsExactlyAtWindowBoundary()`
@@ -33,6 +41,17 @@ signature is the contract; read the source only when the summary is not enough.
 - `void recordUpdatesLastPlayedPerVillagerAndEvent()`
 - `void suppressedDetectionDoesNotStartACooldownWindow()`
 - `void defaultsMatchTheSpecsProposedTable()`
+
+### `class StareDetectorTest` — `common/src/test/java/villager_voices/StareDetectorTest.java`
+- `void doesNotFireBeforeRequiredTicksElapse()`
+- `void firesExactlyOnTheRequiredTick()`
+- `void doesNotFireAgainWhileTheStareContinuesUnbroken()`
+- `void dotDroppingBelowThresholdBreaksTheStare()`
+- `void leavingRangeBreaksTheStare()`
+- `void aBrokenStareFiresAgainOnceRequiredTicksElapseAnew()`
+- `void exactlyAtDotThresholdCounts()`
+- `void exactlyAtRangeBoundaryCounts()`
+- `void stareIsIndependentPerPlayerVillagerPair()`
 
 ### `class VillagerEventBusReactionTest` — `common/src/test/java/villager_voices/VillagerEventBusReactionTest.java`
 Exercises VillagerEventBus's reaction pipeline (VV-2) end to end with a fake LineCatalogue, a fake LineSink, a fake clock, and a fixed roll -- the shape docs/spec/operations/testing.md calls for, without any Minecraft dependency.

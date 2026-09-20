@@ -5,6 +5,14 @@
 Every type with its summary and every non-private constructor, method and constant. The
 signature is the contract; read the source only when the summary is not enough.
 
+### `class CombatAndStateEvents` — `fabric/src/main/java/villager_voices/fabric/events/CombatAndStateEvents.java`
+Wires VV-5's six combat/state events (docs/spec/domains/reaction.md §3: hurt, killed, zombified, cured, sleep, wake) to native Fabric API events, publishing a VillagerReactionSignal for each — no mixin, matching `contracts/platform-matrix.md`'s mixin table, which lists none of these six for Fabric.
+- `void register(VillagerEventBus bus)` — Registers all six hooks against bus.
+
+### `class PolledEvents` — `fabric/src/main/java/villager_voices/fabric/events/PolledEvents.java`
+VV-6: the two events with no push-based hook at all (docs/spec/domains/reaction.md §3, `panic` and `player_staring` rows) — detected by polling loaded villagers once per server tick (`ARCH-DEC-003`) instead of a mixin or native event.
+- `void register(VillagerEventBus bus)` — Registers the poll against bus: one ServerTickEvents#END_SERVER_TICK listener.
+
 ### `class Signals` — `fabric/src/main/java/villager_voices/fabric/events/Signals.java`
 Turns a real, jar-side LivingEntity into a VillagerReactionSignal: the villager's own asleep/baby flags (docs/spec/domains/reaction.md §3's silence rules, REACTION-REQ-009/010) and the ids of the players within hearing range (docs/spec/domains/reaction.md §3 "Hearing range", REACTION-REQ-008).
 - `double HEARING_RANGE_BLOCKS` — Hearing-range search radius, in blocks.

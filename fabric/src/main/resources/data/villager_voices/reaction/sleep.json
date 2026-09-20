@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Mrgh... bed time.",
+      "sound": "villager_voices:reaction.sleep.1"
+    },
+    {
+      "subtitle": "Hnnh, goodnight.",
+      "sound": "villager_voices:reaction.sleep.2"
+    },
+    {
+      "subtitle": "Mmh... zzz.",
+      "sound": "villager_voices:reaction.sleep.3"
+    },
+    {
+      "subtitle": "Ahh, rest at last.",
+      "sound": "villager_voices:reaction.sleep.4"
+    }
+  ]
+}

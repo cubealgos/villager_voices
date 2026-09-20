@@ -1,0 +1,20 @@
+{
+  "lines": [
+    {
+      "subtitle": "Ha! Promoted!",
+      "sound": "villager_voices:reaction.level_up.1"
+    },
+    {
+      "subtitle": "Mrgh, business is booming.",
+      "sound": "villager_voices:reaction.level_up.2"
+    },
+    {
+      "subtitle": "Hmnh, moving up in the world.",
+      "sound": "villager_voices:reaction.level_up.3"
+    },
+    {
+      "subtitle": "Ah, a raise, of sorts.",
+      "sound": "villager_voices:reaction.level_up.4"
+    }
+  ]
+}
