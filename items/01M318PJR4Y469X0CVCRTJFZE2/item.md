@@ -40,16 +40,16 @@ registration/codec code, and the render pipeline itself (VV-11's own ticket cove
 
 ## Acceptance criteria
 
-- [ ] All 64 catalogue lines are original, natural, under-twelve-word spoken sentences with no
+- [x] All 64 catalogue lines are original, natural, under-twelve-word spoken sentences with no
       written grunt, stammer, or interjection string, and no trailing "..." used as a stand-in for
       a sound.
-- [ ] Every line's `grunt` field and its event/count are unchanged from the current 1.0 catalogue.
-- [ ] The `spoken` field is gone from every line (both prior uses were made redundant by the
+- [x] Every line's `grunt` field and its event/count are unchanged from the current 1.0 catalogue.
+- [x] The `spoken` field is gone from every line (both prior uses were made redundant by the
       rewrite itself).
-- [ ] `fabric/.../lang/en_us.json`'s 64 subtitle keys match the catalogue text 1:1.
-- [ ] `docs/spec/domains/reaction-lines.md` reflects the new line tables and cites `LINES-DEC-001`,
+- [x] `fabric/.../lang/en_us.json`'s 64 subtitle keys match the catalogue text 1:1.
+- [x] `docs/spec/domains/reaction-lines.md` reflects the new line tables and cites `LINES-DEC-001`,
       synced from the vault, never hand-edited directly.
-- [ ] `just check` is green (`common`/`fabric` tests, including
+- [x] `just check` is green (`common`/`fabric` tests, including
       `DefaultCatalogueResourcesTest`/`SoundsJsonResourcesTest`, and `just doctor`/`just map` stay
       clean — no public-API shape changed, so no map regen is expected).
 
