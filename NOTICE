@@ -9,28 +9,26 @@ It runs on and is built against:
   at build time by `tools/icon.py` from a local Minecraft client jar; no asset file is copied
   into this repo, only the rendered composite `icon.png` (`just icon`).
 
-Piper TTS (github.com/rhasspy/piper, archived, MIT — the frozen snapshot, not the actively
-maintained GPL-3.0 `OHF-Voice/piper1-gpl` fork) generates the villager voice lines: a build-time
-tool only, never invoked, bundled, or reachable at runtime (`docs/spec/domains/audio.md`
-`AUDIO-REQ-005`). Candidate voice models under evaluation for the timbre sample round
-(`tools/voices/VOICES.md` has the full licence record):
-- `en_US-joe-medium` (dataset: OHF-Voice/voice-datasets), CC0.
-- `en_US-kristin-medium` (dataset: LibriVox), public domain.
-- `en_US-norman-medium` (dataset: LibriVox), public domain.
+The 64 shipped villager voice lines are AI-generated audio (`docs/spec/operations/compliance.md`
+`REL-REQ-004`): synthesized by Chatterbox (Resemble AI, github.com/resemble-ai/chatterbox, MIT code
++ MIT weights via huggingface.co/ResembleAI/chatterbox), a zero-shot voice-cloning TTS, conditioned
+on a short reference clip of a public-domain human voice reading aloud — never on any Mojang audio
+(`docs/spec/domains/audio.md` `AUDIO-DEC-006`). The reference reader: **Greg Giordano**, from his
+LibriVox recording of Fyodor Dostoyevsky's *Short Stories* (librivox.org), a public-domain
+recording of a public-domain text; the reference clip itself is never bundled, committed, or
+redistributed, only read at generation time and discarded (`docs/spec/domains/audio.md` §3
+"Reference", `COMP-REQ-002`). Chatterbox is a build-time tool only, never invoked, bundled, or
+reachable at runtime (`AUDIO-REQ-005`). Piper TTS (github.com/rhasspy/piper, archived, MIT — the
+frozen snapshot, not the actively maintained GPL-3.0 `OHF-Voice/piper1-gpl` fork) remains the
+pipeline's fallback engine, unused by the shipped batch; its candidate voice models
+(`en_US-joe-medium`, `en_US-kristin-medium`, `en_US-norman-medium`, all CC0 or public domain) are
+recorded in `tools/voices/VOICES.md` in case it's ever needed again.
 
-Once Kevin approves a sample timbre and the full 64-line batch replaces the placeholder audio, this
-credit narrows to the one approved model and this notice discloses the shipped audio as
-AI-generated (`docs/spec/operations/compliance.md`, `REL-REQ-004`). NeoForge's own credit is added
-once its module lands and its licence is verified (`docs/spec/operations/compliance.md`).
-The alpha's 64 shipped sound files are build-generated near-silent placeholder audio (a very soft
-click, not true digital silence, `docs/spec/domains/audio.md` `AUDIO-REQ-002`) — not speech, not
-AI-generated, and not sourced from anywhere: nothing here is a disclosure obligation yet
-(`docs/spec/operations/release.md` `REL-REQ-004`). Piper (voice synthesis, build-time only, never
-invoked at runtime) and its voice model will be added and credited here once real audio lands
-(`VV-11`, `docs/spec/domains/audio.md`); that credit will also disclose the shipped audio as
-AI-generated from that release onward (`docs/spec/operations/compliance.md`). NeoForge's own
-credit is added once its module lands and its licence is verified
-(`docs/spec/operations/compliance.md`).
+The alpha's near-silent placeholder audio (`AUDIO-REQ-002`) is fully replaced by this batch — no
+placeholder ships from this release onward. NeoForge's own credit is added once its module lands
+and its licence is verified (`docs/spec/operations/compliance.md`).
 
-All shipped line text and audio are original to this project, never third-party content
-(`docs/spec/decisions/DEC-003-licence.md`).
+All shipped line text is original to this project, never third-party content
+(`docs/spec/decisions/DEC-003-licence.md`); the shipped audio is a new synthesis conditioned on a
+public-domain human voice reading a public-domain text, not a copy or reuse of any third-party
+recording.

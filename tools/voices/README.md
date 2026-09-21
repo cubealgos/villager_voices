@@ -113,6 +113,18 @@ seed is derived deterministically from its own line id (`render.derive_seed`, `A
 rerun reproduces byte-identical output (verified: identical MD5 across two runs of the same
 seed/text/reference on CPU).
 
+**The actually-shipped 1.0 batch used a two-seed pick per line, not `render.derive_seed` alone.**
+Kevin's own steer for this batch: render each line at `derive_seed(line_id)` and one exploration
+alternate, keep whichever measures the higher pitch-lock fraction (round three's own
+autocorrelation method), and re-render an outlier once more at a third seed if its metrics still
+stood out after that. This selection step is a one-off scratchpad script, the same pattern as
+round three/six/seven's own ad-hoc seed/reference-picking tools (never committed here, per
+`tools/voices/VOICES.md`'s own precedent) — the command above reproduces *a* valid render of every
+line at its `derive_seed` value, but not necessarily the exact seed that shipped for a line where
+the alternate won. The shipped batch's own line-by-line seed record (which label won, the seed
+value, duration, pitch-lock fraction, ratio) travels with the release rather than living in this
+file.
+
 ## The pipeline, in order
 
 1. **Input text** (`derive_input_text` in `render.py`): the line's own subtitle, plain English,
