@@ -160,7 +160,7 @@ class LoadCatalogueTest(unittest.TestCase):
     def test_reads_all_64_lines_from_the_real_catalogue(self):
         catalogue = render.load_catalogue()
         self.assertEqual(len(catalogue), 64)
-        self.assertEqual(catalogue["trade_completed.1"], "Traded! Nice.")
+        self.assertEqual(catalogue["trade_completed.1"], "Good trade. Come back tomorrow.")
 
     def test_line_ids_match_sound_naming(self):
         for line_id in render.load_catalogue():
@@ -204,19 +204,21 @@ class LoadCatalogueEntriesTest(unittest.TestCase):
         catalogue = render.load_catalogue()
         self.assertEqual({lid: e["subtitle"] for lid, e in entries.items()}, catalogue)
 
-    def test_sleep_3_has_the_expected_spoken_override(self):
-        entries = render.load_catalogue_entries()
-        self.assertEqual(entries["sleep.3"]["subtitle"], "Zzz.")
-        self.assertEqual(entries["sleep.3"].get("spoken"), "Shh.")
-
-    def test_killed_3_has_the_expected_spoken_override(self):
-        entries = render.load_catalogue_entries()
-        self.assertEqual(entries["killed.3"].get("spoken"), "What, no!")
-
-    def test_most_lines_have_no_spoken_override(self):
+    def test_no_line_has_a_spoken_override(self):
+        # LINES-DEC-001 (VV-20): the 64 lines were rewritten as plain spoken sentences, so the two
+        # lines that once needed an explicit `spoken` override (`sleep.3`, `killed.3`) no longer
+        # do -- the field stays in the codec (still exercised by CatalogueCodecTest's own fixture
+        # data) but nothing in the shipped catalogue uses it any more.
         entries = render.load_catalogue_entries()
         with_override = [lid for lid, e in entries.items() if e.get("spoken")]
-        self.assertEqual(sorted(with_override), ["killed.3", "sleep.3"])
+        self.assertEqual(with_override, [])
+
+    def test_every_line_is_under_twelve_words(self):
+        # LINES-DEC-001: every subtitle is a natural sentence a villager would say, under twelve
+        # words, never a written grunt/stammer/interjection string standing in for a sound.
+        entries = render.load_catalogue_entries()
+        over_limit = {lid: e["subtitle"] for lid, e in entries.items() if len(e["subtitle"].split()) > 11}
+        self.assertEqual(over_limit, {})
 
 
 class DeriveSeedTest(unittest.TestCase):
@@ -359,6 +361,55 @@ class ClonePostChainsTest(unittest.TestCase):
         open_warm = render.CLONE_POST_CHAINS["open_warm"]
         self.assertEqual(open_warm[:len(open_chain) - 2], open_chain[:-2])
         self.assertIn("bass", open_warm)
+
+    def test_open_warm_mix_keeps_open_warm_body_s_eq(self):
+        # Round nine (AUDIO-DEC-006 final amendment, the shipped chain): the body/presence EQ is
+        # unchanged from open_warm_body -- everything up to (not including) the final gate/normalize.
+        body = render.CLONE_POST_CHAINS["open_warm_body"]
+        mix = render.CLONE_POST_CHAINS["open_warm_mix"]
+        self.assertEqual(mix[:-8], body[:-2])
+
+    def test_open_warm_mix_gate_is_softer_than_open_warm_body_gate(self):
+        # open_warm_body_gate's compand cuts -55dB input down to -70dB (a hard -15dB expansion);
+        # open_warm_mix's gate only trims a few dB in the quiet region and leaves normal speech
+        # level (-25dB and up) untouched -- never a hard cut.
+        gate = render.CLONE_POST_CHAINS["open_warm_body_gate"]
+        mix = render.CLONE_POST_CHAINS["open_warm_mix"]
+        self.assertEqual(gate[-8], "compand")
+        self.assertEqual(mix[-8], "compand")
+        gate_transfer = gate[-6]
+        mix_transfer = mix[-6]
+        self.assertNotEqual(gate_transfer, mix_transfer)
+        # Parse "in1,out1,in2,out2,..." pairs and check every mix cut is a few dB, never the gate's
+        # -15dB swing, and that the top of the transfer (normal speech level) is unchanged (0 -> 0).
+        pairs = [float(x) for x in mix_transfer.split(",")]
+        for in_db, out_db in zip(pairs[::2], pairs[1::2]):
+            self.assertLessEqual(abs(out_db - in_db), 5, f"{in_db} -> {out_db} cuts more than a few dB")
+        self.assertEqual(pairs[-2:], [0.0, 0.0])
+
+    def test_open_warm_mix_ends_in_normalize(self):
+        mix = render.CLONE_POST_CHAINS["open_warm_mix"]
+        self.assertEqual(mix[-2:], ["norm", "-3"])
+
+
+class DefaultNoiseredAmountTest(unittest.TestCase):
+    def test_within_kevin_s_approved_range(self):
+        # AUDIO-DEC-006 final amendment: Kevin approved 0.08-0.10 for the output-side noisered pass.
+        self.assertGreaterEqual(render.DEFAULT_NOISERED_AMOUNT, 0.08)
+        self.assertLessEqual(render.DEFAULT_NOISERED_AMOUNT, 0.10)
+
+
+class ApplyNoiseredTest(unittest.TestCase):
+    """`_apply_noisered` (round nine): the output-side denoising step, pure argument-validation
+    reachable without sox installed."""
+
+    def test_missing_profile_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            wav_path = tmp_path / "line.wav"
+            wav_path.write_bytes(b"fake")
+            with self.assertRaises(render.PipelineError):
+                render._apply_noisered(wav_path, tmp_path, tmp_path / "missing.prof", 0.09)
 
 
 class ChainsForEngineTest(unittest.TestCase):
