@@ -16,7 +16,7 @@ Villagers react to what happens to them, with voices and text.
 | Loaders | Fabric |
 | Game versions | 26.2 |
 | Dependencies | Fabric API (required) |
-| Icon | `icon.png` in this folder: this mod's own parchment-and-speech-bubble badge, not the cubealgos Create-family navy one (`just icon` regenerates it, `tools/icon.py`) |
+| Icon | `icon.png` in this folder: the vanilla villager's own head, real 3D rendered, on the plain cubealgos navy badge (not a Create Fly add-on, so no blueprint grid) with a cream speech bubble (`just icon` regenerates it, `tools/icon.py`) |
 | Links | Source `https://github.com/cubealgos/villager_voices` · Issues `https://github.com/cubealgos/villager_voices/issues` · Origin `https://git.cubealgos.de/cubealgos/villager_voices` |
 
 ## Version settings
