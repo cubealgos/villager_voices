@@ -3,22 +3,26 @@
     {
       "subtitle": "Reinforcements, finally.",
       "sound": "villager_voices:reaction.golem_summoned.1",
-      "grunt": "minecraft:entity.villager.celebrate"
+      "grunt": "minecraft:entity.villager.celebrate",
+      "mood": "gentle"
     },
     {
       "subtitle": "Good, we could use the backup.",
       "sound": "villager_voices:reaction.golem_summoned.2",
-      "grunt": "minecraft:entity.villager.celebrate"
+      "grunt": "minecraft:entity.villager.celebrate",
+      "mood": "gentle"
     },
     {
       "subtitle": "Our protector is here.",
       "sound": "villager_voices:reaction.golem_summoned.3",
-      "grunt": "minecraft:entity.villager.celebrate"
+      "grunt": "minecraft:entity.villager.celebrate",
+      "mood": "gentle"
     },
     {
       "subtitle": "I feel much safer now.",
       "sound": "villager_voices:reaction.golem_summoned.4",
-      "grunt": "minecraft:entity.villager.celebrate"
+      "grunt": "minecraft:entity.villager.celebrate",
+      "mood": "gentle"
     }
   ]
 }

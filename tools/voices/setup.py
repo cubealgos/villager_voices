@@ -43,7 +43,14 @@ MODELS_DIR = CACHE_DIR / "models"
 
 CLONE_VENV = Path(__file__).resolve().parent / ".venv-clone"
 CLONE_PYTHON_VERSION = "3.11"
-CLONE_PACKAGES = ("chatterbox-tts==0.1.7", "setuptools<81")
+CLONE_PACKAGES = ("chatterbox-tts==0.1.7", "setuptools<81", "attrs")
+# `attrs` (VV-11 round ten): chatterbox-tts's own dependency chain pulls in omegaconf 2.3.1, whose
+# `_utils.py` only *tries* `import attr` and silently sets `attr = None` on failure -- but a later
+# `is_attr_class` call reaches `attr.has(obj)` unconditionally regardless, an AttributeError on
+# `None` rather than the ImportError omegaconf's own try/except was meant to guard against. `uv`'s
+# resolver doesn't always pull `attrs` in as a transitive dependency of chatterbox-tts/omegaconf, so
+# it's pinned here explicitly rather than left to chance -- found the hard way when round ten's
+# actual renders failed on a clean `--clone` venv.
 
 PIPER_RELEASE = ("rhasspy/piper", "2023.11.14-2", "piper_macos_aarch64.tar.gz")
 PHONEMIZE_RELEASE = ("rhasspy/piper-phonemize", "2023.11.14-4", "piper-phonemize_macos_aarch64.tar.gz")

@@ -476,3 +476,95 @@ Round nine is a direct ruling on round eight's already-rendered samples (`voices
 new sample batch — Kevin picked a specific combination of round eight's own measured groups rather
 than asking for new exploratory renders. The 64-line batch (`VV-11`'s own scope from here) renders
 directly against `open_warm_mix`.
+
+## Round 10: emotion classes, matched references per class (`AUDIO-DEC-006` amendment, `LINES-DEC-002`)
+
+Kevin, on the shipped 64-line batch: "they always sound surprised; it is not conveying the correct
+emotions for everything yet." Punctuation was checked and ruled out first (51 of 64 lines already
+end in a period). Chatterbox clones prosody from its conditioning reference and scales it with
+`exaggeration` — one reference and one setting, applied to all 64 lines, can only ever produce one
+mood. Round ten does not touch the engine, chain family (`open_warm_mix`, unchanged), or temperature
+(0.8, unchanged); it adds a mood dimension on top.
+
+### Six classes, mapped over the 16 events
+
+`docs/spec/domains/reaction-lines.md` `LINES-DEC-002` has the full table (event membership,
+exaggeration/cfg per class) — not repeated here. Three of the ticket's own five explicit anchors
+needed a judgment call to land on an actual event id: "idle-like" (`calm`'s fourth member) is
+`restock`; "refusal/no-trade" (`annoyed`'s third member) is `offer_opened` (the pre-agreement,
+guarded moment — also literally the state in which a villager cannot be traded with); `raid_bell`
+and `golem_summoned` were placed by their own line content (alarmed, gentle-relief respectively)
+rather than by whichever events the ticket's own five-class count happened to leave over.
+
+The catalogue itself carries the mapping now: every one of the 64 lines' JSON entries
+(`fabric/src/main/resources/data/villager_voices/reaction/*.json`) has a `"mood"` field, one value
+per event, `common`'s `CatalogueCodec` validating it against a closed six-value set and rejecting a
+file whose four lines disagree.
+
+### Segment selection, measured across the whole chapter
+
+Round seven's own reference-picking scanned only the chapter's opening 90s; round ten needed six
+segments with genuinely different prosody, so it scanned the *whole* ~37.5-minute recording (fetched
+fresh from the same archive.org URL, gitignored, never committed) in overlapping 20s windows
+(`scratchpad/voices-round-10/scan_segments.py`). Each window: round three's own pitch-measurement
+method (40ms frames, 50% overlap, RMS-gated voiced frames, autocorrelation restricted to 70-400Hz),
+tightened to a 10%-of-peak voicing gate and a 0.45 autocorrelation-peak acceptance threshold (round
+three's own 0.3/1% was tuned on short, mostly-voiced villager grunt clips; continuous speech has far
+more unvoiced material, and the looser thresholds pooled a visibly inflated median f0 — checked
+empirically on a trial window before changing either number, and confirmed the change mostly trims
+variance rather than shifting the median). Per window: pitch variance, energy variance, a
+speaking-rate proxy (onsets/second from the smoothed RMS envelope), pitch-contour slope, and mean
+voiced-run length. `scratchpad/voices-round-10/select_segments.py` scores every window per class
+(z-scored across the whole scan population) and greedily picks one 20s segment per class, most
+acoustically distinctive classes first (`alarmed`, `hurt`, `annoyed`, `calm`, `gentle`, `pleased`),
+non-overlapping with 10s padding. All six measure with no clipping (`sox stat` max amplitude
+0.30-0.56) and directionally match their intended profile — `calm`/`annoyed` are the two
+lowest-pitch-variance segments, `alarmed` is highest on pitch variance/rate/slope, `hurt` has the
+only strongly negative slope, `gentle` has the lowest energy variance. Full metrics per segment are
+in `scratchpad/voices-round-10/README.md` §2 and `tools/voices/reference.py`'s
+`EMOTION_REFERENCE_SEGMENTS` table (the committed offsets).
+
+Each segment was cut from the full recording, normalized (`norm -3`, no lowpass — round seven's
+finding still applies), and denoised the same way as round nine's own reference (`noisered` against
+a profile built from 0.1s-0.8s of the source recording, before the reader's first word) —
+`tools/voices/reference.py`'s new `build_emotion_reference_wav`.
+
+### Twelve-line A/B sample
+
+Two representative lines per class (twelve lines), rendered against the new per-class reference/
+settings and, for direct comparison, against round nine's old single shared reference —
+`scratchpad/voices-round-10/render_ab.py`, using `render.py`'s own `render_line`/
+`clone_reference_and_settings` functions (the same code path `--batch --reference-dir` uses).
+24/24 renders succeeded, ~388s total on CPU. Measured (not just heard): pitch mean drops for every
+class but `alarmed` under the new per-class references (143-184Hz vs. 190-224Hz old) — one concrete,
+measurable shape of "always sound surprised," since the old single reference pulls every line toward
+the same higher register regardless of content; `alarmed` alone moves the other way (higher, not
+lower), correctly. Pitch variance moves toward each class's own target for the two most distinctive
+classes: `calm` drops, `alarmed` rises. Full per-line and per-class numbers are in
+`scratchpad/voices-round-10/README.md` §3-4 (gitignored, not committed, same as every prior round's
+sample folder).
+
+### Wiring: `render.py --batch --reference-dir`, `--mood-override`
+
+`tools/voices/render.py` gained `mood_for_line` (resolves a line's class from its catalogue `mood`
+or an explicit override) and `clone_reference_and_settings` (resolves a class to its reference path
+and default exaggeration/cfg, an explicit CLI value still overriding the class default for either).
+`--reference-dir <dir>` (a directory of `ref_<class>.wav` files) makes `--batch` dispatch per line
+automatically instead of the whole 64-line run sharing one `--reference`; `--mood-override <class>`
+forces every processed line to one class regardless of its own catalogue `mood`, for testing —
+requires `--reference-dir`, and requires it because without per-class dispatch active there is
+nothing for an override to override. `--reference` (a single fixed WAV) and `--reference-dir` are
+mutually exclusive at the CLI level; round nine's exact documented shipped-batch command (`--reference
+<file> --exaggeration 0.5 --cfg 0.2`) is unaffected and still reproduces byte-identical output.
+
+### Not yet shipped
+
+The 64-line batch committed at `2e856e8` is untouched — round ten prepares the per-class alternative
+and renders the twelve-line comparison sample for Kevin's approval (`AUDIO-FAIL-003`'s same gate);
+it does not re-render the full batch. A found-along-the-way fix, unrelated to the pipeline's own
+decisions but required to render anything at all: `tools/voices/setup.py`'s `--clone` venv install
+list was missing `attrs` as an explicit dependency — `chatterbox-tts`'s own dependency chain pulls in
+`omegaconf`, whose optional `attr` import silently degrades to `None` on failure rather than raising,
+and a later `attr.has(...)` call then crashes with an `AttributeError` instead of the plain
+`ModuleNotFoundError` the try/except was meant to produce. Pinned `attrs` explicitly in
+`CLONE_PACKAGES` so a fresh `setup.py --clone` doesn't hit the same crash.

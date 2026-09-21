@@ -220,6 +220,141 @@ class LoadCatalogueEntriesTest(unittest.TestCase):
         over_limit = {lid: e["subtitle"] for lid, e in entries.items() if len(e["subtitle"].split()) > 11}
         self.assertEqual(over_limit, {})
 
+    def test_every_line_has_a_mood_from_the_known_set(self):
+        # VV-11 round ten, LINES-DEC-002: every 1.0 line is mapped to one of the six emotion
+        # classes; a missing or unknown mood is a catalogue authoring bug, not a valid state.
+        entries = render.load_catalogue_entries()
+        moods = {lid: e.get("mood") for lid, e in entries.items()}
+        missing = [lid for lid, m in moods.items() if m is None]
+        self.assertEqual(missing, [])
+        unknown = {lid: m for lid, m in moods.items() if m not in reference.EMOTION_SETTINGS}
+        self.assertEqual(unknown, {})
+
+    def test_every_event_s_four_lines_agree_on_mood(self):
+        # Mood is per event (LINES-DEC-002 §1), not per line -- the codec itself rejects a file
+        # whose lines disagree, but this also proves it end to end against the real catalogue.
+        entries = render.load_catalogue_entries()
+        moods_by_event: dict[str, set[str]] = {}
+        for line_id, entry in entries.items():
+            event = line_id.rsplit(".", 1)[0]
+            moods_by_event.setdefault(event, set()).add(entry.get("mood"))
+        disagreeing = {event: moods for event, moods in moods_by_event.items() if len(moods) != 1}
+        self.assertEqual(disagreeing, {})
+
+    def test_mood_mapping_matches_lines_dec_002(self):
+        # docs/spec/domains/reaction-lines.md LINES-DEC-002's own table, pinned here so a drift
+        # between the catalogue data and the spec's documented mapping fails a test, not a listen.
+        expected = {
+            "calm": {"sleep", "wake", "baby_grows", "restock"},
+            "pleased": {"trade_completed", "level_up", "cured"},
+            "annoyed": {"breeding", "player_staring", "offer_opened"},
+            "hurt": {"hurt"},
+            "alarmed": {"panic", "killed", "zombified", "raid_bell"},
+            "gentle": {"golem_summoned"},
+        }
+        self.assertEqual(sum(len(v) for v in expected.values()), 16)
+        entries = render.load_catalogue_entries()
+        actual: dict[str, set[str]] = {}
+        for line_id, entry in entries.items():
+            event = line_id.rsplit(".", 1)[0]
+            actual.setdefault(entry["mood"], set()).add(event)
+        self.assertEqual(actual, expected)
+
+
+class MoodForLineTest(unittest.TestCase):
+    """`mood_for_line` (VV-11 round ten): `--mood-override` wins outright over the catalogue; a
+    line with neither raises rather than silently rendering an arbitrary default mood."""
+
+    def test_override_wins_over_catalogue_mood(self):
+        entries = {"hurt.1": {"mood": "hurt"}}
+        self.assertEqual(render.mood_for_line("hurt.1", entries, mood_override="alarmed"), "alarmed")
+
+    def test_falls_back_to_catalogue_mood(self):
+        entries = {"hurt.1": {"mood": "hurt"}}
+        self.assertEqual(render.mood_for_line("hurt.1", entries), "hurt")
+
+    def test_raises_when_neither_is_present(self):
+        entries = {"hurt.1": {}}
+        with self.assertRaises(render.PipelineError):
+            render.mood_for_line("hurt.1", entries)
+
+
+class CloneReferenceAndSettingsTest(unittest.TestCase):
+    """`clone_reference_and_settings` (VV-11 round ten): resolves a mood to its reference path and
+    default generation settings, an explicit exaggeration/cfg_weight overriding the class default
+    independently."""
+
+    def test_resolves_the_reference_path_by_naming_convention(self):
+        ref_wav, _exag, _cfg = render.clone_reference_and_settings("calm", Path("/refs"))
+        self.assertEqual(ref_wav, Path("/refs/ref_calm.wav"))
+
+    def test_uses_the_class_default_settings(self):
+        _ref, exag, cfg = render.clone_reference_and_settings("alarmed", Path("/refs"))
+        self.assertEqual(exag, reference.EMOTION_SETTINGS["alarmed"]["exaggeration"])
+        self.assertEqual(cfg, reference.EMOTION_SETTINGS["alarmed"]["cfg_weight"])
+
+    def test_explicit_exaggeration_overrides_the_class_default(self):
+        _ref, exag, cfg = render.clone_reference_and_settings("calm", Path("/refs"), exaggeration=0.9)
+        self.assertEqual(exag, 0.9)
+        self.assertEqual(cfg, reference.EMOTION_SETTINGS["calm"]["cfg_weight"])
+
+    def test_explicit_cfg_weight_overrides_the_class_default(self):
+        _ref, exag, cfg = render.clone_reference_and_settings("calm", Path("/refs"), cfg_weight=0.9)
+        self.assertEqual(exag, reference.EMOTION_SETTINGS["calm"]["exaggeration"])
+        self.assertEqual(cfg, 0.9)
+
+    def test_unknown_mood_raises(self):
+        with self.assertRaises(render.PipelineError):
+            render.clone_reference_and_settings("furious", Path("/refs"))
+
+
+class EmotionReferenceSegmentsTest(unittest.TestCase):
+    """`reference.EMOTION_REFERENCE_SEGMENTS` (VV-11 round ten): one 15-25s segment per class, the
+    same six classes `EMOTION_SETTINGS` and the catalogue's own `mood` values name."""
+
+    def test_covers_exactly_the_six_known_moods(self):
+        self.assertEqual(set(reference.EMOTION_REFERENCE_SEGMENTS), set(reference.EMOTION_SETTINGS))
+
+    def test_every_segment_is_15_to_25_seconds(self):
+        for mood, (start_s, end_s) in reference.EMOTION_REFERENCE_SEGMENTS.items():
+            duration = end_s - start_s
+            self.assertGreaterEqual(duration, 15.0, mood)
+            self.assertLessEqual(duration, 25.0, mood)
+
+    def test_segments_do_not_overlap(self):
+        segments = sorted(reference.EMOTION_REFERENCE_SEGMENTS.values())
+        for (_s1, e1), (s2, _e2) in zip(segments, segments[1:]):
+            self.assertLessEqual(e1, s2)
+
+    def test_every_offset_is_non_negative(self):
+        for mood, (start_s, end_s) in reference.EMOTION_REFERENCE_SEGMENTS.items():
+            self.assertGreaterEqual(start_s, 0.0, mood)
+            self.assertGreater(end_s, start_s, mood)
+
+
+class EmotionSettingsTest(unittest.TestCase):
+    """`reference.EMOTION_SETTINGS` (VV-11 round ten, LINES-DEC-002's table)."""
+
+    def test_every_class_has_an_exaggeration_and_cfg_weight(self):
+        for mood, settings in reference.EMOTION_SETTINGS.items():
+            self.assertIn("exaggeration", settings, mood)
+            self.assertIn("cfg_weight", settings, mood)
+
+    def test_exaggeration_increases_from_calm_to_alarmed(self):
+        # LINES-DEC-002's own escalating scale: calm < {pleased, gentle} < annoyed < hurt < alarmed.
+        e = {mood: s["exaggeration"] for mood, s in reference.EMOTION_SETTINGS.items()}
+        self.assertLess(e["calm"], e["pleased"])
+        self.assertEqual(e["pleased"], e["gentle"])
+        self.assertLess(e["pleased"], e["annoyed"])
+        self.assertLess(e["annoyed"], e["hurt"])
+        self.assertLess(e["hurt"], e["alarmed"])
+
+    def test_alarmed_is_the_only_class_with_a_lower_cfg_weight(self):
+        # LINES-DEC-002: "cfg 0.3 for slower classes and 0.2 for alarmed."
+        for mood, settings in reference.EMOTION_SETTINGS.items():
+            expected = 0.2 if mood == "alarmed" else 0.3
+            self.assertEqual(settings["cfg_weight"], expected, mood)
+
 
 class DeriveSeedTest(unittest.TestCase):
     """`derive_seed` (`AUDIO-REQ-006`): the clone engine's deterministic torch seed, hashed from the
@@ -529,6 +664,88 @@ class BuildReferenceWavPostProcessingTest(unittest.TestCase):
         self.assertIn("0.9", concat_cmd)
         # re-normalized after the post-processing effects, not only once at the start
         self.assertEqual(concat_cmd.count("norm"), 2)
+
+
+class BuildEmotionReferenceWavTest(unittest.TestCase):
+    """`build_emotion_reference_wav` (VV-11 round ten) -- argument validation and the sox commands
+    it constructs, checked via a stubbed `subprocess.run` so this runs without sox installed."""
+
+    def _fake_run_factory(self, calls: list[list[str]]):
+        class _Result:
+            returncode = 0
+            stderr = ""
+
+        def _fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            if cmd and cmd[0] == "sox":
+                for tok in cmd:
+                    if tok.endswith(".wav"):
+                        Path(tok).parent.mkdir(parents=True, exist_ok=True)
+                        Path(tok).touch()
+            return _Result()
+
+        return _fake_run
+
+    def test_unknown_emotion_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "source.wav"
+            source.touch()
+            with self.assertRaises(reference.ReferenceError):
+                reference.build_emotion_reference_wav("furious", source, Path(tmp) / "out.wav")
+
+    def test_missing_source_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(reference.ReferenceError):
+                reference.build_emotion_reference_wav("calm", Path(tmp) / "missing.wav", Path(tmp) / "out.wav")
+
+    def test_missing_noiseprof_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "source.wav"
+            source.touch()
+            with self.assertRaises(reference.ReferenceError):
+                reference.build_emotion_reference_wav(
+                    "calm", source, Path(tmp) / "out.wav", noiseprof=Path(tmp) / "missing.prof",
+                )
+
+    def test_trim_uses_the_class_s_own_segment_offsets(self):
+        calls: list[list[str]] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "source.wav"
+            source.touch()
+            original_run = reference.subprocess.run
+            reference.subprocess.run = self._fake_run_factory(calls)
+            try:
+                reference.build_emotion_reference_wav("hurt", source, tmp_path / "out.wav")
+            finally:
+                reference.subprocess.run = original_run
+        start_s, end_s = reference.EMOTION_REFERENCE_SEGMENTS["hurt"]
+        trim_cmd = calls[-1]
+        self.assertIn("trim", trim_cmd)
+        idx = trim_cmd.index("trim")
+        self.assertEqual(float(trim_cmd[idx + 1]), start_s)
+        self.assertEqual(float(trim_cmd[idx + 2]), end_s - start_s)
+
+    def test_noiseprof_given_applies_noisered_after_the_trim(self):
+        calls: list[list[str]] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "source.wav"
+            source.touch()
+            profile = tmp_path / "noise.prof"
+            profile.touch()
+            original_run = reference.subprocess.run
+            reference.subprocess.run = self._fake_run_factory(calls)
+            try:
+                reference.build_emotion_reference_wav(
+                    "calm", source, tmp_path / "out.wav", noiseprof=profile, noiseprof_amount=0.09,
+                )
+            finally:
+                reference.subprocess.run = original_run
+        self.assertEqual(len(calls), 2)
+        self.assertIn("trim", calls[0])
+        self.assertIn("noisered", calls[1])
+        self.assertIn("0.09", calls[1])
 
 
 class AssetIndexResolutionTest(unittest.TestCase):

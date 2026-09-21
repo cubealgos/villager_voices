@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
 import wave
 from pathlib import Path
 
@@ -171,6 +172,96 @@ def build_reference_wav(
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0 or not out_wav.exists():
         raise ReferenceError(f"sox failed concatenating the reference: {proc.stderr.strip()}")
+
+
+# --- Emotion-matched giordano segments (VV-11 round ten, `LINES-DEC-002`) --------------------------
+#
+# Round nine's shipped batch conditions all 64 lines on one 45-73s giordano segment (README.md
+# "Building the reference and noise-profile files") — one reference, one mood. Kevin on that batch:
+# "they always sound surprised; it is not conveying the correct emotions for everything yet."
+# Chatterbox clones prosody from its reference and scales it with `exaggeration`, so a single
+# reference/setting pair can only ever produce a single mood regardless of a line's own words.
+#
+# `EMOTION_REFERENCE_SEGMENTS` names one 15-25s segment per emotion class, cut from the same
+# giordano recording (never a different source -- the licence/credit story is unchanged,
+# `domains/audio.md` `AUDIO-DEC-006`), picked by scanning the whole ~37.5-minute chapter (not just
+# round seven's 90s opening) in overlapping 20s windows and scoring each by pitch variance, energy
+# variance, and a speaking-rate proxy (onsets/second), plus pitch-contour slope and mean voiced-run
+# length for the classes whose profile needs them -- round three's own pitch-measurement method
+# (40ms frames, 50% overlap, RMS-gated voicing, autocorrelation restricted to 70-400Hz), applied here
+# to continuous speech rather than isolated villager clips. The scan script, the six segments'
+# measured metrics, and the twelve-line A/B sample are in `scratchpad/voices-round-10/` (gitignored,
+# not committed, same as every prior round's sample folder) and `tools/voices/VOICES.md` "Round 10".
+#
+# Offsets are seconds into the same source recording round seven/nine already used:
+# https://archive.org/download/dostoyevskyshortstories_1310_librivox/shortstories_01_dostoyevsky.mp3
+# (Greg Giordano, LibriVox, public domain, `AUDIO-DEC-006` round seven amendment) -- never a
+# different reader or book. `domains/reaction-lines.md` `LINES-DEC-002` has the class-to-event
+# mapping and the per-class `exaggeration`/`cfg_weight` this segment pairs with; this table only
+# records where each class's own segment sits in the source recording.
+EMOTION_REFERENCE_SEGMENTS: dict[str, tuple[float, float]] = {
+    "calm": (2228.0, 2248.0),
+    "pleased": (753.0, 773.0),
+    "annoyed": (1848.0, 1868.0),
+    "hurt": (403.0, 423.0),
+    "alarmed": (1333.0, 1353.0),
+    "gentle": (623.0, 643.0),
+}
+
+# The default per-class Chatterbox generation settings (`domains/reaction-lines.md` `LINES-DEC-002`'s
+# table) -- `render.py`'s `--batch` mode looks a line's mood up here once, via its catalogue `mood`
+# field, rather than the whole 64-line batch sharing one `--exaggeration`/`--cfg`. Temperature (0.8)
+# and the post-processing chain (`open_warm_mix`) are unchanged across every class, round nine.
+EMOTION_SETTINGS: dict[str, dict[str, float]] = {
+    "calm": {"exaggeration": 0.25, "cfg_weight": 0.3},
+    "pleased": {"exaggeration": 0.35, "cfg_weight": 0.3},
+    "annoyed": {"exaggeration": 0.4, "cfg_weight": 0.3},
+    "hurt": {"exaggeration": 0.5, "cfg_weight": 0.3},
+    "alarmed": {"exaggeration": 0.65, "cfg_weight": 0.2},
+    "gentle": {"exaggeration": 0.35, "cfg_weight": 0.3},
+}
+
+
+def build_emotion_reference_wav(
+    emotion: str,
+    source_wav: Path,
+    out_wav: Path,
+    *,
+    noiseprof: Path | None = None,
+    noiseprof_amount: float = 0.1,
+) -> None:
+    """Cuts `EMOTION_REFERENCE_SEGMENTS[emotion]` out of `source_wav` (the full giordano source
+    recording, decoded to a sox-readable format -- never committed, `COMP-REQ-002`), normalizes to
+    -3dB, and (when `noiseprof` is given) applies `noisered` at `noiseprof_amount` -- round nine's
+    same denoising step (`README.md` "Building the reference and noise-profile files"), applied here
+    to each class's own segment instead of one shared 45-73s excerpt."""
+    if emotion not in EMOTION_REFERENCE_SEGMENTS:
+        raise ReferenceError(f"unknown emotion {emotion!r}; choose one of {sorted(EMOTION_REFERENCE_SEGMENTS)}")
+    if not source_wav.exists():
+        raise ReferenceError(f"source recording not found: {source_wav}")
+    start_s, end_s = EMOTION_REFERENCE_SEGMENTS[emotion]
+    duration_s = end_s - start_s
+    out_wav.parent.mkdir(parents=True, exist_ok=True)
+
+    if noiseprof is None:
+        cmd = ["sox", str(source_wav), str(out_wav), "trim", str(start_s), str(duration_s), "norm", "-3"]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0 or not out_wav.exists():
+            raise ReferenceError(f"sox failed building the {emotion!r} reference: {proc.stderr.strip()}")
+        return
+
+    if not noiseprof.exists():
+        raise ReferenceError(f"noise profile not found: {noiseprof}")
+    with tempfile.TemporaryDirectory() as tmp:
+        plain = Path(tmp) / "plain.wav"
+        cmd = ["sox", str(source_wav), str(plain), "trim", str(start_s), str(duration_s), "norm", "-3"]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0 or not plain.exists():
+            raise ReferenceError(f"sox failed building the {emotion!r} reference: {proc.stderr.strip()}")
+        cmd = ["sox", str(plain), str(out_wav), "noisered", str(noiseprof), str(noiseprof_amount)]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0 or not out_wav.exists():
+            raise ReferenceError(f"sox noisered failed for the {emotion!r} reference: {proc.stderr.strip()}")
 
 
 def build_named_reference(

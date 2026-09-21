@@ -24,6 +24,13 @@ signature is the contract; read the source only when the summary is not enough.
 - `void parsesALineWithoutASpokenOverrideAsNull()`
 - `void rejectsABlankSpokenOverride()`
 - `void aGruntAndASpokenOverrideCoexist()`
+- `void parsesALineWithAMood()`
+- `void parsesALineWithoutAMoodAsNull()`
+- `void rejectsABlankMood()`
+- `void rejectsAnUnknownMood()`
+- `void rejectsDisagreeingMoodsInTheSameFile()`
+- `void allowsSomeLinesToOmitMoodWhileOthersSetIt()`
+- `void aGruntASpokenOverrideAndAMoodCoexist()`
 
 ### `class CatalogueTest` — `common/src/test/java/villager_voices/catalogue/CatalogueTest.java`
 - `void linesForAnUnloadedEventIsEmpty()`

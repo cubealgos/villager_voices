@@ -20,16 +20,18 @@ The loaded line catalogue: every reaction event's eligible Lines, keyed by event
 
 ### `class CatalogueCodec` — `common/src/main/java/villager_voices/catalogue/CatalogueCodec.java`
 Decodes one data/villager_voices/reaction/.json file's text into its Lines (docs/spec/domains/reaction-lines.md §2).
+- `Set<String> KNOWN_MOODS` — The six emotion classes docs/spec/domains/reaction-lines.md's LINES-DEC-002 defines over the 16 events (VV-11 round ten) -- gentle is the short id for "gentle/pleading".
 - `List<Line> parseEventFile(String eventId, String json, Predicate<String> soundExists)` — Parses eventId's file text into its lines, in file order.
 
 ### `class CatalogueLoadException` — `common/src/main/java/villager_voices/catalogue/CatalogueLoadException.java`
 Thrown when a catalogue file fails to load: malformed JSON, a shape that doesn't match §2, a sound id that doesn't follow villager_voices:reaction.., or a sound id naming a SoundEvent that isn't registered.
 - `CatalogueLoadException(String message)`
 
-### `record Line(String text, String soundId, String grunt, String spoken)` — `common/src/main/java/villager_voices/catalogue/Line.java`
+### `record Line(String text, String soundId, String grunt, String spoken, String mood)` — `common/src/main/java/villager_voices/catalogue/Line.java`
 One catalogue entry: the subtitle text a player sees, the id of the SoundEvent it plays, e.g.
-- `Line(String text, String soundId)` — No grunt, no spoken override (VV-3's original shape, before VV-18/VV-11 round six added them).
-- `Line(String text, String soundId, String grunt)` — No spoken override (VV-18's shape, before VV-11 round six added the field).
+- `Line(String text, String soundId)` — No grunt, no spoken override, no mood (VV-3's original shape, before VV-18/VV-11 added them).
+- `Line(String text, String soundId, String grunt)` — No spoken override, no mood (VV-18's shape, before VV-11 round six/ten added them).
+- `Line(String text, String soundId, String grunt, String spoken)` — No mood (VV-11 round six's shape, before round ten added it).
 
 ### `class MiniJson` — `common/src/main/java/villager_voices/catalogue/MiniJson.java`
 A small hand-written JSON reader for this module's own fixed shapes (the reaction catalogue files, the lang file).

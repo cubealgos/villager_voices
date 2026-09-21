@@ -3,22 +3,26 @@
     {
       "subtitle": "Good trade. Come back tomorrow.",
       "sound": "villager_voices:reaction.trade_completed.1",
-      "grunt": "minecraft:entity.villager.trade"
+      "grunt": "minecraft:entity.villager.trade",
+      "mood": "pleased"
     },
     {
       "subtitle": "That was a fair deal for both of us.",
       "sound": "villager_voices:reaction.trade_completed.2",
-      "grunt": "minecraft:entity.villager.trade"
+      "grunt": "minecraft:entity.villager.trade",
+      "mood": "pleased"
     },
     {
       "subtitle": "Emeralds. I could get used to this.",
       "sound": "villager_voices:reaction.trade_completed.3",
-      "grunt": "minecraft:entity.villager.trade"
+      "grunt": "minecraft:entity.villager.trade",
+      "mood": "pleased"
     },
     {
       "subtitle": "Pleasure doing business with you.",
       "sound": "villager_voices:reaction.trade_completed.4",
-      "grunt": "minecraft:entity.villager.trade"
+      "grunt": "minecraft:entity.villager.trade",
+      "mood": "pleased"
     }
   ]
 }

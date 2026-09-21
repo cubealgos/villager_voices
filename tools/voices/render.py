@@ -40,6 +40,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import reference
+
 TOOLS_VOICES = Path(__file__).resolve().parent
 REPO_ROOT = TOOLS_VOICES.parent.parent
 CATALOGUE_DIR = REPO_ROOT / "fabric" / "src" / "main" / "resources" / "data" / "villager_voices" / "reaction"
@@ -560,6 +562,41 @@ def _render_line_clone(
             raise PipelineError(f"sox failed for {out_ogg}: {proc.stderr.strip()}")
 
 
+def mood_for_line(line_id: str, entries: dict[str, dict], mood_override: str | None = None) -> str:
+    """The emotion class to render `line_id` with (VV-11 round ten, `domains/reaction-lines.md`
+    `LINES-DEC-002`): `mood_override` when given (a CLI escape hatch for testing/comparison, never
+    a substitute for fixing the catalogue), else the line's own catalogue `mood` field. Every 1.0
+    line has one (`LINES-DEC-002`'s table maps all 16 events), so this only raises for a line the
+    catalogue itself left unmapped -- a data bug, not a normal code path."""
+    if mood_override is not None:
+        return mood_override
+    mood = entries[line_id].get("mood")
+    if mood is None:
+        raise PipelineError(f"{line_id} has no catalogue \"mood\" field and no --mood-override was given")
+    return mood
+
+
+def clone_reference_and_settings(
+    mood: str, reference_dir: Path,
+    exaggeration: float | None = None, cfg_weight: float | None = None,
+) -> tuple[Path, float, float]:
+    """The reference WAV and `exaggeration`/`cfg_weight` pair for `mood`: the reference is
+    `reference_dir / f"ref_{mood}.wav"` (`reference.build_emotion_reference_wav`'s own naming), the
+    settings are `reference.EMOTION_SETTINGS[mood]` unless `exaggeration`/`cfg_weight` is given
+    explicitly (a CLI override wins over the class default, independently for either one -- so a
+    single line can still be nudged without abandoning per-class dispatch for the rest of the
+    batch)."""
+    if mood not in reference.EMOTION_SETTINGS:
+        raise PipelineError(f"unknown mood {mood!r}; choose one of {sorted(reference.EMOTION_SETTINGS)}")
+    reference_wav = reference_dir / f"ref_{mood}.wav"
+    settings = reference.EMOTION_SETTINGS[mood]
+    return (
+        reference_wav,
+        exaggeration if exaggeration is not None else settings["exaggeration"],
+        cfg_weight if cfg_weight is not None else settings["cfg_weight"],
+    )
+
+
 def render_line(
     engine: str, line_id: str, text: str, out_ogg: Path, chain: str, *,
     model: str | None = None, reference_wav: Path | None = None,
@@ -675,20 +712,40 @@ CANDIDATE_LICENCES = {
 
 def run_batch(
     engine: str, chain: str, *, model: str | None = None, reference_wav: Path | None = None,
-    exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
+    reference_dir: Path | None = None, mood_override: str | None = None,
+    exaggeration: float | None = None, cfg_weight: float | None = None,
     temperature: float = DEFAULT_TEMPERATURE,
     noisered_profile: Path | None = None, noisered_amount: float = DEFAULT_NOISERED_AMOUNT,
 ) -> None:
+    """`reference_wav` (a single fixed reference, round nine's own shipped-batch shape) and
+    `reference_dir` (a directory of per-mood references, VV-11 round ten, `LINES-DEC-002`) are
+    mutually exclusive for `--engine chatterbox` -- `reference_wav` wins if both are somehow given,
+    so round nine's exact documented command keeps working unchanged. `reference_dir` mode looks up
+    each line's own catalogue `mood` (or `mood_override`, if given, for every line) and resolves its
+    reference/settings via `clone_reference_and_settings`; an explicit `exaggeration`/`cfg_weight`
+    still overrides the per-mood default in either mode."""
     entries = load_catalogue_entries()
     catalogue = {line_id: entry["subtitle"] for line_id, entry in entries.items()}
     for line_id, subtitle in sorted(catalogue.items()):
         event, n = line_id.rsplit(".", 1)
         text = derive_input_text(line_id, subtitle, entries[line_id].get("spoken"))
         out_ogg = SHIPPED_SOUNDS_DIR / f"{event}_{n}.ogg"
-        print(f"rendering {out_ogg.relative_to(REPO_ROOT)}  ({text!r})")
+        line_reference_wav = reference_wav
+        line_exaggeration = exaggeration
+        line_cfg_weight = cfg_weight
+        if engine == "chatterbox" and reference_wav is None and reference_dir is not None:
+            mood = mood_for_line(line_id, entries, mood_override)
+            line_reference_wav, line_exaggeration, line_cfg_weight = clone_reference_and_settings(
+                mood, reference_dir, exaggeration, cfg_weight,
+            )
+            print(f"rendering {out_ogg.relative_to(REPO_ROOT)}  mood={mood}  ({text!r})")
+        else:
+            print(f"rendering {out_ogg.relative_to(REPO_ROOT)}  ({text!r})")
         render_line(
             engine, line_id, text, out_ogg, chain,
-            model=model, reference_wav=reference_wav, exaggeration=exaggeration, cfg_weight=cfg_weight,
+            model=model, reference_wav=line_reference_wav,
+            exaggeration=line_exaggeration if line_exaggeration is not None else DEFAULT_EXAGGERATION,
+            cfg_weight=line_cfg_weight if line_cfg_weight is not None else DEFAULT_CFG_WEIGHT,
             temperature=temperature, noisered_profile=noisered_profile, noisered_amount=noisered_amount,
         )
 
@@ -712,12 +769,26 @@ def main() -> int:
                          help="'piper' (default, original engine) or 'chatterbox' (round four's clone engine, AUDIO-DEC-006)")
     parser.add_argument("--model", help="piper voice model name (required for --batch with --engine piper)")
     parser.add_argument("--reference", type=Path, dest="reference_wav",
-                         help="reference WAV for --engine chatterbox (required for --batch with --engine chatterbox); "
-                              "tools/voices/reference.py builds one from vanilla's own clips")
-    parser.add_argument("--exaggeration", type=float, default=DEFAULT_EXAGGERATION,
-                         help="chatterbox exaggeration (default %(default)s)")
-    parser.add_argument("--cfg", type=float, default=DEFAULT_CFG_WEIGHT, dest="cfg_weight",
-                         help="chatterbox cfg_weight (default %(default)s)")
+                         help="a single fixed reference WAV for --engine chatterbox, applied to every "
+                              "line the same way (round nine's shipped-batch shape); mutually exclusive "
+                              "with --reference-dir")
+    parser.add_argument("--reference-dir", type=Path, dest="reference_dir",
+                         help="a directory of ref_<mood>.wav files, one per emotion class "
+                              "(reference.EMOTION_REFERENCE_SEGMENTS, VV-11 round ten, LINES-DEC-002) -- "
+                              "--batch resolves each line's own catalogue \"mood\" against this directory "
+                              "and reference.EMOTION_SETTINGS automatically; mutually exclusive with "
+                              "--reference")
+    parser.add_argument("--mood-override", dest="mood_override", choices=sorted(reference.EMOTION_SETTINGS),
+                         help="force every rendered line to this mood instead of its own catalogue "
+                              "\"mood\" (testing/comparison only, VV-11 round ten); requires --reference-dir")
+    parser.add_argument("--exaggeration", type=float, default=None,
+                         help="chatterbox exaggeration; with --reference-dir, defaults to the per-line "
+                              f"mood's own setting instead of a flat default (default {DEFAULT_EXAGGERATION!r} "
+                              "with a plain --reference)")
+    parser.add_argument("--cfg", type=float, default=None, dest="cfg_weight",
+                         help="chatterbox cfg_weight; with --reference-dir, defaults to the per-line "
+                              f"mood's own setting instead of a flat default (default {DEFAULT_CFG_WEIGHT!r} "
+                              "with a plain --reference)")
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE,
                          help="chatterbox sampling temperature (default %(default)s; round five, "
                               "AUDIO-DEC-006 amendment, raises it to soften the delivery)")
@@ -739,15 +810,22 @@ def main() -> int:
         valid_chains = chains_for_engine(args.engine)
         if args.chain is not None and args.chain not in valid_chains:
             parser.error(f"--chain {args.chain!r} is not valid for --engine {args.engine}; choose one of {sorted(valid_chains)}")
+        if args.reference_wav is not None and args.reference_dir is not None:
+            parser.error("--reference and --reference-dir are mutually exclusive")
+        if args.mood_override is not None and args.reference_dir is None:
+            parser.error("--mood-override requires --reference-dir")
 
         if args.sample:
             chains = (args.chain,) if args.chain else tuple(sorted(valid_chains))
             if args.engine == "chatterbox" and args.reference_wav is None:
-                parser.error("--sample with --engine chatterbox requires --reference")
+                parser.error("--sample with --engine chatterbox requires --reference "
+                             "(--reference-dir/--mood-override dispatch is --batch-only)")
             models = (args.model,) if args.model else CANDIDATE_MODELS
             run_sample(
                 args.out, args.engine, chains, models=models, reference_wav=args.reference_wav,
-                exaggeration=args.exaggeration, cfg_weight=args.cfg_weight, temperature=args.temperature,
+                exaggeration=args.exaggeration if args.exaggeration is not None else DEFAULT_EXAGGERATION,
+                cfg_weight=args.cfg_weight if args.cfg_weight is not None else DEFAULT_CFG_WEIGHT,
+                temperature=args.temperature,
                 noisered_profile=args.noisered_profile, noisered_amount=args.noisered_amount,
             )
         else:
@@ -755,10 +833,11 @@ def main() -> int:
                 parser.error("--batch requires --chain")
             if args.engine == "piper" and not args.model:
                 parser.error("--batch with --engine piper requires --model")
-            if args.engine == "chatterbox" and args.reference_wav is None:
-                parser.error("--batch with --engine chatterbox requires --reference")
+            if args.engine == "chatterbox" and args.reference_wav is None and args.reference_dir is None:
+                parser.error("--batch with --engine chatterbox requires --reference or --reference-dir")
             run_batch(
                 args.engine, args.chain, model=args.model, reference_wav=args.reference_wav,
+                reference_dir=args.reference_dir, mood_override=args.mood_override,
                 exaggeration=args.exaggeration, cfg_weight=args.cfg_weight, temperature=args.temperature,
                 noisered_profile=args.noisered_profile, noisered_amount=args.noisered_amount,
             )

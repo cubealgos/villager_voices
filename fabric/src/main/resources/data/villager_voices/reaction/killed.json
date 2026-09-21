@@ -3,22 +3,26 @@
     {
       "subtitle": "No, please, not like this.",
       "sound": "villager_voices:reaction.killed.1",
-      "grunt": "minecraft:entity.villager.death"
+      "grunt": "minecraft:entity.villager.death",
+      "mood": "alarmed"
     },
     {
       "subtitle": "This is not fair.",
       "sound": "villager_voices:reaction.killed.2",
-      "grunt": "minecraft:entity.villager.death"
+      "grunt": "minecraft:entity.villager.death",
+      "mood": "alarmed"
     },
     {
       "subtitle": "Wait, no!",
       "sound": "villager_voices:reaction.killed.3",
-      "grunt": "minecraft:entity.villager.death"
+      "grunt": "minecraft:entity.villager.death",
+      "mood": "alarmed"
     },
     {
       "subtitle": "I did not deserve this.",
       "sound": "villager_voices:reaction.killed.4",
-      "grunt": "minecraft:entity.villager.death"
+      "grunt": "minecraft:entity.villager.death",
+      "mood": "alarmed"
     }
   ]
 }

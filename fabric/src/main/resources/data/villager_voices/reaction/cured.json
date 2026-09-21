@@ -3,22 +3,26 @@
     {
       "subtitle": "I am warm again.",
       "sound": "villager_voices:reaction.cured.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "pleased"
     },
     {
       "subtitle": "That is much better.",
       "sound": "villager_voices:reaction.cured.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "pleased"
     },
     {
       "subtitle": "Thank you, truly.",
       "sound": "villager_voices:reaction.cured.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "pleased"
     },
     {
       "subtitle": "Good as new, thanks to you.",
       "sound": "villager_voices:reaction.cured.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "pleased"
     }
   ]
 }

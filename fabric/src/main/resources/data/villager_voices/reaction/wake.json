@@ -3,22 +3,26 @@
     {
       "subtitle": "Morning already.",
       "sound": "villager_voices:reaction.wake.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
       "subtitle": "Another day, I suppose.",
       "sound": "villager_voices:reaction.wake.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
       "subtitle": "Well rested, at least.",
       "sound": "villager_voices:reaction.wake.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
       "subtitle": "Let's get to it, then.",
       "sound": "villager_voices:reaction.wake.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     }
   ]
 }

@@ -3,22 +3,26 @@
     {
       "subtitle": "Time for bed.",
       "sound": "villager_voices:reaction.sleep.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
       "subtitle": "Goodnight, then.",
       "sound": "villager_voices:reaction.sleep.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
       "subtitle": "Quiet now, I am sleeping.",
       "sound": "villager_voices:reaction.sleep.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
       "subtitle": "Rest at last.",
       "sound": "villager_voices:reaction.sleep.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     }
   ]
 }

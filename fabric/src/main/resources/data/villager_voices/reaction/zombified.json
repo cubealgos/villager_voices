@@ -3,22 +3,26 @@
     {
       "subtitle": "Something is wrong with me.",
       "sound": "villager_voices:reaction.zombified.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
       "subtitle": "I feel so cold.",
       "sound": "villager_voices:reaction.zombified.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
       "subtitle": "I cannot stop this.",
       "sound": "villager_voices:reaction.zombified.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
       "subtitle": "I can barely think straight.",
       "sound": "villager_voices:reaction.zombified.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     }
   ]
 }

@@ -65,7 +65,7 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
 |---|---|
 | Input | The line's own subtitle text, plain English, no scrambling or nonsense/CV-syllable transform (`AUDIO-DEC-004`, still standing) — but no longer strictly *verbatim* as of round six (`AUDIO-DEC-006` amendment): Kevin on round five's output, "they can't pronounce stuff like 'ouuchh' properly, sounds like letter salad." A catalogue line's explicit `spoken` field, when present, is used as-is (`domains/reaction-lines.md` §2); a line without one falls back to `tools/voices/render.py`'s own `normalize_spoken_text` — a known-interjection lookup table, a written-interruption em dash turned into a pause or dropped, a 3+-letter-run collapse, and repeated-punctuation stripping — which is a no-op for the large majority of the catalogue's already-plainly-written subtitles. Only two of the 64 lines needed an explicit `spoken` override (`sleep.3`, `killed.3`; `domains/reaction-lines.md` §3's "Spoken" column has both). VV-18's grunt split (`AUDIO-REQ-007`) still applies underneath this: every subtitle is already grunt-free before any of the above runs. |
 | Generator | **`chatterbox`, a zero-shot voice-cloning TTS (Resemble AI, MIT code + MIT weights), conditioned on a reference WAV built from vanilla's own villager grunt clips** — the primary engine as of round four (`AUDIO-DEC-006`). `piper` (the frozen `rhasspy/piper` MIT snapshot, archived, not the actively-maintained `OHF-Voice/piper1-gpl` GPL-3.0 fork) is kept as the fallback engine, rounds 1–3's work untouched (`tools/voices/render.py --engine piper`, still the default flag value for backward compatibility). Both are build-time tools only, never shipped; only their output `.ogg` files ship (research §C, `COMP-REQ-001`). |
-| Reference (clone engine only) | **Decided, final: giordano (LibriVox, public domain).** Kevin, round six: "giordano is the best sample." A single clean human-voice clip, normalized (`norm -3`), **no lowpass at all** (round seven finding, below) — never bundled, committed, or redistributed; source URL, licence, and reader name recorded in `tools/voices/VOICES.md` "Round 6"/"Round 7" and credited by name in `NOTICE` once the batch ships. Round four/five's vanilla-clip reference (`all`/`all_warm`) and round six's other two human-voice candidates (`joe_chat`, `pirie`) are retired for this purpose; the vanilla grunt reference and its asset-cache resolution machinery (`tools/voices/reference.py`'s `REFERENCE_SETS`) stay in the codebase, unrelated to and unaffected by this choice (`AUDIO-REQ-007`'s splice-before-the-line grunt mechanism is a completely separate feature). Round nine (`AUDIO-DEC-006` final amendment, below) settles which *variant* of this clip conditions the shipped batch: the **denoised** one (`noisered` applied to the reference itself, round eight's `ref_giordano_denoised.wav`), not the original. |
+| Reference (clone engine only) | **Decided, final: giordano (LibriVox, public domain).** Kevin, round six: "giordano is the best sample." A single clean human-voice clip, normalized (`norm -3`), **no lowpass at all** (round seven finding, below) — never bundled, committed, or redistributed; source URL, licence, and reader name recorded in `tools/voices/VOICES.md` "Round 6"/"Round 7" and credited by name in `NOTICE` once the batch ships. Round four/five's vanilla-clip reference (`all`/`all_warm`) and round six's other two human-voice candidates (`joe_chat`, `pirie`) are retired for this purpose; the vanilla grunt reference and its asset-cache resolution machinery (`tools/voices/reference.py`'s `REFERENCE_SETS`) stay in the codebase, unrelated to and unaffected by this choice (`AUDIO-REQ-007`'s splice-before-the-line grunt mechanism is a completely separate feature). Round nine (`AUDIO-DEC-006` amendment, below) settles which *variant* of this clip conditions the shipped batch: the **denoised** one (`noisered` applied to the reference itself, round eight's `ref_giordano_denoised.wav`), not the original. Round ten (`AUDIO-DEC-006` amendment, below; `domains/reaction-lines.md` `LINES-DEC-002`) still uses only this one source recording, but cuts six different 15-25s segments from it, one per emotion class, instead of a single segment shared by the whole batch — not yet shipped, pending Kevin's listen. |
 | Reference preparation, "tin can" finding (round seven, `AUDIO-DEC-006` final amendment) | Kevin, round six: "it still sounds like someone is speaking into a tin can." Traced to two compounding narrow-band choices, neither the reference recording itself: round five's reference preparation applied `lowpass 7000` to *every* reference regardless of voice (carried over unexamined into round six); and `villager_mild`'s own chain added a further `lowpass 6000` on top. Round seven's reference prep drops the lowpass entirely (`norm -3` only) and re-sources giordano from the reader's own higher-bitrate archive.org file (128kbps, not the 64kbps file rounds six used) — LibriVox's own catalogue commonly hosts both per chapter. Also re-picked the cleanest ~28s stretch of that file for clear articulation and no room tone (measured by RMS consistency across the recording, not by ear). |
 | Post-processing chain, family decided (round seven/eight, `AUDIO-DEC-006` final amendment) | **`villager_mild`/`villager_pitch` retired; `open_warm` is the decided chain family.** Every chain through round six had a lowpass well under 10kHz; round seven's `open`/`open_warm`/`open_tempo` chains explicitly avoid any lowpass under 10kHz and drop round six's 1200Hz nasal boost entirely, the opposite move from every prior round's design (`tools/voices/render.py` `CLONE_POST_CHAINS`). `dry` (an explicit high-quality upsample from Chatterbox's native 24kHz plus `norm -3`, nothing else) is the control. Kevin, round seven's samples: "open_warm is good" — the family is decided; round eight (below) refines it further for a remaining "noisy/hollow" complaint. |
 | Noise and hollowness (round eight, `AUDIO-DEC-006` final amendment) | Kevin, round seven: "open_warm is good, but the audio still sounds a bit noisy/hollow." Measured first, not guessed: quietest-100ms-window RMS across round seven's `open_warm` samples showed most lines already near-silent (~-90dBFS) but one line with a real, elevated floor whose spectrum was dominated by a ~60Hz tonal peak (mains-hum-range, not broadband hiss) — consistent with room/electrical tone learned from the reference, not generic model noise. Checked the reference itself for a reverberant decay tail (the "hollow" hypothesis): at 100ms resolution, every brief pause within the current 28s excerpt drops to near-silence within one window, no gradual decay visible — no strong evidence of room reverb in this particular stretch, so the reference excerpt itself is kept; the "hollow" quality is treated as more likely a chain/upsample artifact than a room-acoustics one. Two independent fixes: `noisered` (a noise profile built from a genuinely silent stretch elsewhere in the *same* source recording — the cloning excerpt itself has no real silence, deliberately, `tools/voices/VOICES.md` "Round 7") applied to the generated output, and separately to the reference audio itself before conditioning (so the clone doesn't learn the room) — both variants (denoised and original reference) are kept, not just one; and a soft gate (`compand`) on the output. `open_warm_body` (`open_warm` plus low-mid body and top-end presence EQ, and a steep upsample filter, `rate -v -s`) is the chain these fixes stack onto. Measurements and Kevin's pick are in `tools/voices/VOICES.md` "Round 8" / `voices-samples-8/README.md` (scratchpad). |
@@ -106,10 +106,13 @@ depend on audible volume (research §B4), so the placeholder exercises the exact
 
 ## 7. Open questions
 
-None. Round nine (`AUDIO-DEC-006` final amendment, §8) closed the last open item: the exact
-`open_warm`-family refinement is `open_warm_mix` — the body EQ kept, the denoised giordano
-reference, a light `noisered` (0.08–0.10), and a soft, shallow gate only. Every other pipeline
-choice (engine, reference clip, chain family, delivery setting) was already decided by round eight.
+Round nine (`AUDIO-DEC-006` final amendment, §8) closed the pipeline's own open items — engine,
+reference clip, chain family, delivery setting. Round ten (§8, `LINES-DEC-002`) does not reopen any
+of those; it adds a further dimension on top (one reference/setting pair per emotion class rather
+than one for the whole batch) after Kevin's own listen to the round-nine batch found it flat across
+lines ("they always sound surprised"). **Open**: Kevin has not yet heard round ten's twelve-line A/B
+sample (`scratchpad/voices-round-10/`, gitignored) — the 64-line batch is not re-rendered against
+the per-class settings until that approval, same gate as `AUDIO-FAIL-003`.
 
 Resolved, kept for history: the input-text question (`AUDIO-REQ-006`) — it is the subtitle verbatim,
 not a distinct nonsense string (`AUDIO-DEC-004`, reversing §3 "Input"'s original proposal).
@@ -272,7 +275,7 @@ nothing further tunes its pitch depth while it isn't the active engine.
   (round seven's decided family) and the giordano reference are both untouched by any of round
   eight's refinements — reverting to plain `open_warm` is a zero-cost fallback, not a redesign.
 
-  **Round nine amendment, final** (Kevin, 2026-09-21, choosing between round eight's four groups:
+  **Round nine amendment** (Kevin, 2026-09-21, choosing between round eight's four groups:
   "a mixture between the control set and the denoisedref would be good"). Round eight's own
   measurements pointed the way rather than being overridden: the gate measured neutral-to-positive
   on the "metallic" ratio and `noisered` carried the only measurable cost, so round nine keeps the
@@ -291,3 +294,43 @@ nothing further tunes its pitch depth while it isn't the active engine.
   original (non-denoised) reference are all untouched in `render.py`/`reference.py` — swapping
   `open_warm_mix` for one of them, or re-tuning the `noisered` amount within its 0.08–0.10 range,
   is a rerun of already-decided settings, not a redesign.
+
+  **Round ten amendment** (Kevin, 2026-09-21, on the round-nine 64-line batch: "they always sound
+  surprised; it is not conveying the correct emotions for everything yet" — punctuation was checked
+  and ruled out first, 51 of the 64 lines already end in a period). Chatterbox clones prosody from
+  its conditioning reference and scales it with `exaggeration`; a single reference and a single
+  `exaggeration`/`cfg_weight` pair, applied to all 64 lines regardless of the event's own emotional
+  register, can only ever produce one mood. Round ten does not change the engine, chain family
+  (`open_warm_mix`, unchanged, round nine), or temperature (0.8, unchanged) — it adds a mood
+  dimension on top: six emotion classes over the 16 events (`domains/reaction-lines.md`
+  `LINES-DEC-002`, which has the full class table, event mapping, and per-class exaggeration/cfg),
+  each with its own 15-25s reference segment cut from the same giordano recording (never a different
+  source — round seven/nine's licence and credit reasoning is unaffected) and de-noised the same way
+  as round nine's shipped reference (`noisered` against a profile built from a silent stretch near
+  the start of the source recording).
+
+  **Segment selection, measured rather than picked by ear**: the whole ~37.5-minute chapter
+  recording (not just round seven's 90s opening scan) was swept in overlapping 20s windows, each
+  scored by three metrics matching round three's own pitch-measurement method (40ms frames, 50%
+  overlap, RMS-gated voicing, autocorrelation restricted to 70-400Hz) — pitch variance (std of
+  accepted f0s), energy variance (std of per-frame RMS), and a speaking-rate proxy (onsets/second
+  from peak-picking the smoothed RMS envelope), plus a pitch-contour slope (rising/falling) and mean
+  voiced-run length (a "clipped rhythm" proxy) for the classes that need them. One segment per class
+  was picked by the class's own scoring rule (`domains/reaction-lines.md` `LINES-DEC-002`'s table
+  names each rule), non-overlapping across classes. The exact offsets, per-segment measured metrics,
+  and the twelve-line A/B rendered sample (each of two representative lines per class, at the new
+  per-class reference/settings and at round nine's old single reference, for comparison) are in
+  `tools/voices/reference.py`'s `EMOTION_REFERENCE_SEGMENTS` table and
+  `scratchpad/voices-round-10/README.md` (gitignored, not committed — same as every prior round's
+  sample folder).
+
+  **Not yet shipped.** The 64-line batch already committed under round nine's single-reference chain
+  is untouched by this amendment — round ten only prepares the per-class alternative and renders a
+  twelve-line comparison sample for Kevin's approval (`AUDIO-FAIL-003`'s same gate), it does not
+  re-render the full batch. `tools/voices/render.py --batch` now resolves each line's reference/
+  settings from its catalogue `mood` automatically once approved; `--mood-override` renders a single
+  line at a different class, for testing. **Cost if wrong:** round nine's single-reference chain is
+  fully intact (nothing in `CLONE_POST_CHAINS`, the engine dispatch, or the shipped `.ogg` files
+  changed) — dropping the per-class dimension and re-running `--batch` with an explicit
+  `--reference`/`--exaggeration`/`--cfg` again reproduces exactly round nine's batch, unaffected by
+  anything round ten added.
