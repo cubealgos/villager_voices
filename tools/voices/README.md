@@ -28,6 +28,9 @@ just voices-sample                             # 3 lines x each candidate model 
 just voices-batch en_US-joe-medium deep         # all 64 lines, once a model AND a chain are approved
 ```
 
+(`just voices-batch` runs the `--engine piper` fallback; the shipped 1.0 batch uses `--engine
+chatterbox` instead — see "The clone engine" below for the exact command.)
+
 `voices-sample` writes to the scratchpad-style `--out` directory (default
 `tools/voices/.cache/samples/`) plus a `README.md` there listing every file with its subtitle,
 chain, and model licence — nothing here is copied into `fabric/`'s resources. Pass `--model` and/or
@@ -44,20 +47,44 @@ explicitly gates the batch on that approval.
 
 ## The clone engine (`--engine chatterbox`, `AUDIO-DEC-006`)
 
+**The shipped 1.0 batch, final (round nine, `AUDIO-DEC-006` final amendment):**
+
 ```
 tools/voices/.venv-clone/bin/python tools/voices/render.py \
-    --sample --engine chatterbox --reference <path-to-reference.wav> \
-    [--exaggeration 0.3] [--cfg 0.5] [--temperature 1.0] [--chain warm|soft|plain-warm|tail|none]
-
-tools/voices/.venv-clone/bin/python tools/voices/render.py \
-    --batch --engine chatterbox --reference <path-to-reference.wav> --chain warm
+    --batch --engine chatterbox \
+    --reference /path/to/ref_giordano_denoised.wav \
+    --chain open_warm_mix \
+    --exaggeration 0.5 --cfg 0.2 --temperature 0.8 \
+    --noisered-profile /path/to/giordano_noise.prof --noisered-amount 0.09
 ```
 
 Run with the clone venv's own `python` (`tools/voices/.venv-clone/`, `setup.py --clone`) — this file
 still imports cleanly without Chatterbox/torch installed (`test_render.py` covers argument
-validation only, never a real render), but actually generating audio needs the venv. `--reference`
-is a reference WAV built from vanilla's own villager clips, read from the client's own asset cache
-at generation time and never committed (`tools/voices/reference.py`, `COMP-REQ-002`):
+validation only, never a real render), but actually generating audio needs the venv.
+
+**Building the reference and noise-profile files** (both outside the repo, never committed —
+`COMP-REQ-002`; sourced from Greg Giordano's LibriVox reading of Dostoyevsky's *Short Stories*,
+public domain, `tools/voices/VOICES.md` "Round 6"/"Round 7"/"Round 9"):
+
+```
+sox giordano_45-73s.wav /tmp/ref_giordano_original.wav norm -3
+sox giordano_source.mp3 -n trim 0.1 0.7 noiseprof /tmp/giordano_noise.prof
+sox /tmp/ref_giordano_original.wav /tmp/ref_giordano_denoised.wav noisered /tmp/giordano_noise.prof 0.1
+```
+
+The first line builds the plain (non-denoised) reference (45s-73s of the source recording, round
+seven's own cleanest-stretch pick — `norm -3` only, no lowpass); the second builds a noise profile
+from 0.1s-0.8s of the *source* file, before the reader's first word (round eight's own silent
+stretch); the third applies that profile to the reference itself at `noisered`'s own default
+strength `0.1` so the clone doesn't learn the room (round eight/nine, "denoised"). The *output-side*
+`noisered` pass (`--noisered-profile`/`--noisered-amount` above) reuses the same profile file at a
+lighter `0.08`-`0.10` (round nine's own approved range, `DEFAULT_NOISERED_AMOUNT = 0.09`) — two
+separate applications of the same profile, one to the reference before conditioning, one to each
+line's generated output.
+
+**Exploring other references/chains** (sample round, retired history, other voice-cloning
+candidates): `reference.build_named_reference` builds a reference from vanilla's own clips instead
+of a human voice —
 
 ```
 cd tools/voices && .venv-clone/bin/python -c "
@@ -72,19 +99,19 @@ reference.build_named_reference(
 
 `REFERENCE_SETS` in `reference.py` names four: `all` (every villager clip vanilla ships), `talking`
 (idle+haggle+yes only — the ones that read as speech), `idle` (idle only, the smallest), `all_warm`
-(round five, `AUDIO-DEC-006` amendment: `all` minus the four clipped `hit*` clips — the decided
-reference set, `tools/voices/VOICES.md` "Round 5"). `build_reference_wav`/`build_named_reference`'s
-optional `lowpass_hz`/`tempo` parameters post-process the finished reference before the engine ever
-conditions on it (round five bakes in a `lowpass_hz=7000` for exactly this reason). `--chain`
-selects a `CLONE_POST_CHAINS` entry: `warm`/`soft`/`plain-warm` (round five, aimed at a less
-"metallic" timbre) or round four's `tail`/`none` — a much lighter touch than Piper's `SOX_CHAINS`
-either way, since the reference itself supplies the villager timbre this time. `--exaggeration`/
+(round five, `AUDIO-DEC-006` amendment: `all` minus the four clipped `hit*` clips). This vanilla-clip
+approach is retired for the shipped batch (round six replaced it with the giordano human-voice
+reference above) but stays in the codebase, unrelated to and unaffected by that choice. `--chain`
+selects a `CLONE_POST_CHAINS` entry — `open_warm_mix` (round nine, the shipped chain), the earlier
+`open`/`open_warm`/`open_warm_body`/`open_warm_body_gate`/`dry`/`open_tempo` (rounds seven/eight),
+or the oldest `warm`/`soft`/`plain-warm`/`tail`/`none` (rounds four/five) — see `render.py`'s own
+`CLONE_POST_CHAINS` comments for what each does, and `tools/voices/VOICES.md` for why. `--exaggeration`/
 `--cfg`/`--temperature` map directly to Chatterbox's own `exaggeration`/`cfg_weight`/`temperature`
-generation parameters (defaults 0.5/0.5/0.8 — round five's samples lower exaggeration and raise
-temperature, `docs/spec/domains/audio.md` §3 "Timbre target"). Every line's torch seed is derived
-deterministically from its own line id (`render.derive_seed`, `AUDIO-REQ-006`) so a rerun reproduces
-byte-identical output (verified: identical MD5 across two runs of the same seed/text/reference on
-CPU).
+generation parameters (round seven's approved delivery setting is `0.5`/`0.2`/`0.8`, the shipped
+batch's own values above — `docs/spec/domains/audio.md` §3 "Delivery length"). Every line's torch
+seed is derived deterministically from its own line id (`render.derive_seed`, `AUDIO-REQ-006`) so a
+rerun reproduces byte-identical output (verified: identical MD5 across two runs of the same
+seed/text/reference on CPU).
 
 ## The pipeline, in order
 

@@ -421,3 +421,58 @@ the denoised reference (3 short lines) — the original, non-denoised reference 
 four groups (A, C), not dropped outright. Noise floor (dBFS), ratio, and duration table, plus
 Kevin's pick, are in `voices-samples-8/README.md` (scratchpad, not committed) and the VV-11
 round-eight report.
+
+## Round 9: `open_warm_mix`, the shipped chain (`AUDIO-DEC-006` final amendment)
+
+Kevin, choosing between round eight's four groups: "a mixture between the control set and the
+denoisedref would be good." Round eight's own measurements pointed the way rather than being
+overridden: the gate (group C) matched or beat the control on every line's "metallic" ratio and
+`noisered` (groups B/D) carried the only measurable ratio cost — so round nine keeps the body EQ
+and the gate, and dials `noisered` back to a lighter strength rather than dropping it.
+
+### The chain
+
+`open_warm_mix` (`tools/voices/render.py` `CLONE_POST_CHAINS`): `open_warm_body`'s low-mid body
+(`equalizer 300 1q +2`) and top-end presence (`equalizer 5000 1q +1.5`, `treble +2 10000`) stay
+byte-for-byte unchanged, followed by a soft, shallow gate only —
+
+```
+compand 0.03,0.2 -70,-74,-45,-47,-25,-25,0,0 0 -90 0.1
+```
+
+— a much gentler transfer than `open_warm_body_gate`'s `-55,-70,-40,-40,0,0` (a hard -15dB
+expansion at -55dB in): the quietest region (-70dB in) is trimmed to -74dB (-4dB), -45dB in to -47dB
+(-2dB), and everything from -25dB up (normal speech level) is passed through unchanged. "Trims the
+floor by a few dB, never a hard cut" (Kevin's own framing for the ruling) is a literal description
+of this transfer function, not just a summary of it.
+
+### The reference and the output-side denoising
+
+The conditioning reference is round eight's **denoised** giordano variant
+(`ref_giordano_denoised.wav`: `noisered` applied to the plain, no-lowpass giordano reference itself,
+using a profile built from a genuinely silent stretch of the *same* source recording — round eight's
+own method, 0.1s-0.8s of the source mp3, before the reader's first word) — not the original,
+matching "the denoisedref" half of Kevin's own framing. A second, separate `noisered` pass runs on
+each line's *generated output*, at a lighter 0.08-0.10 (down from round eight's exploratory 0.15,
+`DEFAULT_NOISERED_AMOUNT = 0.09` at the middle of that range) — the "mixture ... would be good" half:
+some of round eight's noise/hollow fix, not all of it at its strongest setting. Both denoising steps
+reuse the same noise-profile file; `tools/voices/README.md` "The clone engine" has the exact commands
+to build it and run the shipped batch.
+
+### Implementation, committed rather than scratchpad-only
+
+Round eight's `noisered` insertion lived in a one-off `round8_driver.py` (scratchpad, never
+committed) because it needed an external profile-file path that doesn't fit `CLONE_POST_CHAINS`'
+fixed effects-list shape. Round nine commits the mechanism instead of repeating the scratchpad
+pattern: `render.py` gained `--noisered-profile`/`--noisered-amount` CLI flags (both optional, both
+`chatterbox`-only) and a small `_apply_noisered` step in `_render_line_clone` that runs *before*
+the named `CLONE_POST_CHAINS` command, on the raw Chatterbox output — so `open_warm_mix` works
+with or without a profile (without one, it ships only the chain's own gate, not the output-side
+`noisered` half of round nine).
+
+### No sample round this time
+
+Round nine is a direct ruling on round eight's already-rendered samples (`voices-samples-8/`), not a
+new sample batch — Kevin picked a specific combination of round eight's own measured groups rather
+than asking for new exploratory renders. The 64-line batch (`VV-11`'s own scope from here) renders
+directly against `open_warm_mix`.

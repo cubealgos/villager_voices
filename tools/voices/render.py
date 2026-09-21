@@ -243,7 +243,34 @@ CLONE_POST_CHAINS = {
         "compand", "0.005,0.1", "-55,-70,-40,-40,0,0", "-3", "-60", "0.02",
         "norm", "-3",
     ],
+    # Round nine (`AUDIO-DEC-006` final amendment, the shipped chain): Kevin, choosing between
+    # round eight's four groups, "a mixture between the control set and the denoisedref would be
+    # good." Keeps `open_warm_body`'s body/presence EQ unchanged (round eight's own measurements
+    # never blamed it for any hardening), then a *soft, shallow* gate only -- the same `compand`
+    # shape as `open_warm_body_gate` but a much gentler transfer that trims only a few dB off the
+    # quiet end (-70 -> -74dB, -45 -> -47dB) and leaves normal speech level (-25dB and up)
+    # completely untouched, never a hard cut. The other half of round nine -- conditioning on the
+    # *denoised* giordano reference and a light `noisered` (0.08-0.10) on the generated output --
+    # isn't expressible as a fixed effects list (both need an external profile file built from a
+    # silent stretch of the source recording): the denoised reference is a `--reference` file
+    # choice at render time (`tools/voices/VOICES.md` "Round 9"), and the output-side `noisered` is
+    # applied as its own pipeline step, before this chain runs, via `--noisered-profile`/
+    # `--noisered-amount` (`_render_line_clone` below) -- never baked into `CLONE_POST_CHAINS`
+    # itself, so the chain stays reusable without that profile file too.
+    "open_warm_mix": [
+        "rate", "-v", "-s", "44100",
+        "highpass", "70", "equalizer", "3200", "1.5q", "-2", "treble", "-1.5",
+        "bass", "+2", "equalizer", "400", "1q", "+1.5",
+        "equalizer", "300", "1q", "+2", "equalizer", "5000", "1q", "+1.5", "treble", "+2", "10000",
+        "compand", "0.03,0.2", "-70,-74,-45,-47,-25,-25,0,0", "0", "-90", "0.1",
+        "norm", "-3",
+    ],
 }
+
+# Round nine (`AUDIO-DEC-006` final amendment): the default `noisered` amount for `open_warm_mix`'s
+# output-side denoising when `--noisered-amount` isn't passed explicitly -- the middle of Kevin's
+# approved 0.08-0.10 range.
+DEFAULT_NOISERED_AMOUNT = 0.09
 
 # Candidates for the sample round (tools/voices/VOICES.md has the full licence record).
 CANDIDATE_MODELS = (
@@ -478,14 +505,35 @@ def _load_chatterbox():
     return _CHATTERBOX_MODEL
 
 
+def _apply_noisered(wav_path: Path, tmp: Path, noisered_profile: Path, noisered_amount: float) -> Path:
+    """Round nine (`AUDIO-DEC-006` final amendment): a light `noisered` pass on the generated
+    output, using a profile file built ahead of time from a genuinely silent stretch of the
+    conditioning reference's own source recording (round eight's approach, now a committed step
+    instead of a scratchpad-only driver script). Returns the path to the denoised WAV; the caller's
+    `CLONE_POST_CHAINS` command runs on this file instead of the raw Chatterbox output."""
+    if not noisered_profile.exists():
+        raise PipelineError(f"noisered profile not found: {noisered_profile}")
+    denoised_path = tmp / "line_denoised.wav"
+    cmd = ["sox", str(wav_path), str(denoised_path), "noisered", str(noisered_profile), str(noisered_amount)]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0 or not denoised_path.exists():
+        raise PipelineError(f"sox noisered failed for {wav_path}: {proc.stderr.strip()}")
+    return denoised_path
+
+
 def _render_line_clone(
     line_id: str, text: str, out_ogg: Path, reference_wav: Path, chain: str,
-    exaggeration: float, cfg_weight: float, temperature: float,
+    exaggeration: float, cfg_weight: float, temperature: float, *,
+    noisered_profile: Path | None = None, noisered_amount: float = DEFAULT_NOISERED_AMOUNT,
 ) -> None:
     """Runs Chatterbox on `text`, conditioned on `reference_wav` (the vanilla-villager reference,
     `tools/voices/reference.py`), seeded deterministically from `line_id` (`derive_seed`,
     `AUDIO-REQ-006`), then the named post-processing chain (`CLONE_POST_CHAINS`), writing
-    `out_ogg`."""
+    `out_ogg`. `noisered_profile` (round nine, `AUDIO-DEC-006` final amendment), when given, runs
+    a `noisered` pass at `noisered_amount` on the raw generated WAV before the chain -- the
+    `open_warm_mix` chain is designed around this step but doesn't require it: a chain that doesn't
+    need denoising simply ignores an unused profile argument, and `open_warm_mix` without one still
+    runs, just without the output-side half of round nine's fix."""
     if not reference_wav.exists():
         raise PipelineError(f"reference WAV not found: {reference_wav}")
     if chain not in CLONE_POST_CHAINS:
@@ -501,8 +549,11 @@ def _render_line_clone(
     )
     out_ogg.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
-        wav_path = Path(tmp) / "line.wav"
+        tmp_path = Path(tmp)
+        wav_path = tmp_path / "line.wav"
         torchaudio.save(str(wav_path), wav, model.sr)
+        if noisered_profile is not None:
+            wav_path = _apply_noisered(wav_path, tmp_path, noisered_profile, noisered_amount)
         sox_cmd = ["sox", str(wav_path), *SOX_FORMAT_ARGS, str(out_ogg), *CLONE_POST_CHAINS[chain]]
         proc = subprocess.run(sox_cmd, capture_output=True, text=True)
         if proc.returncode != 0 or not out_ogg.exists():
@@ -514,11 +565,13 @@ def render_line(
     model: str | None = None, reference_wav: Path | None = None,
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
     temperature: float = DEFAULT_TEMPERATURE,
+    noisered_profile: Path | None = None, noisered_amount: float = DEFAULT_NOISERED_AMOUNT,
 ) -> None:
     """Engine dispatcher: `"piper"` (the original engine, `_render_line_piper`) or `"chatterbox"`
     (round four's clone engine, `_render_line_clone`, `AUDIO-DEC-006`). `line_id` is required by both
     so error messages and the clone engine's deterministic seed always have it, even though Piper
-    itself doesn't use it."""
+    itself doesn't use it. `noisered_profile`/`noisered_amount` (round nine) are `chatterbox`-only;
+    `piper` ignores them."""
     if engine == "piper":
         if not model:
             raise PipelineError("engine 'piper' requires --model")
@@ -526,7 +579,10 @@ def render_line(
     elif engine == "chatterbox":
         if reference_wav is None:
             raise PipelineError("engine 'chatterbox' requires --reference")
-        _render_line_clone(line_id, text, out_ogg, reference_wav, chain, exaggeration, cfg_weight, temperature)
+        _render_line_clone(
+            line_id, text, out_ogg, reference_wav, chain, exaggeration, cfg_weight, temperature,
+            noisered_profile=noisered_profile, noisered_amount=noisered_amount,
+        )
     else:
         raise PipelineError(f"unknown engine {engine!r}; choose 'piper' or 'chatterbox'")
 
@@ -549,6 +605,7 @@ def run_sample(
     models: tuple[str, ...] = (), reference_wav: Path | None = None,
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
     temperature: float = DEFAULT_TEMPERATURE,
+    noisered_profile: Path | None = None, noisered_amount: float = DEFAULT_NOISERED_AMOUNT,
 ) -> None:
     entries = load_catalogue_entries()
     catalogue = {line_id: entry["subtitle"] for line_id, entry in entries.items()}
@@ -598,7 +655,7 @@ def run_sample(
                     render_line(
                         "chatterbox", line_id, text, out_ogg, chain,
                         reference_wav=reference_wav, exaggeration=exaggeration, cfg_weight=cfg_weight,
-                        temperature=temperature,
+                        temperature=temperature, noisered_profile=noisered_profile, noisered_amount=noisered_amount,
                     )
                     readme_lines.append(
                         f"| {reference_wav} | {exaggeration} | {cfg_weight} | {temperature} | {chain} | "
@@ -620,6 +677,7 @@ def run_batch(
     engine: str, chain: str, *, model: str | None = None, reference_wav: Path | None = None,
     exaggeration: float = DEFAULT_EXAGGERATION, cfg_weight: float = DEFAULT_CFG_WEIGHT,
     temperature: float = DEFAULT_TEMPERATURE,
+    noisered_profile: Path | None = None, noisered_amount: float = DEFAULT_NOISERED_AMOUNT,
 ) -> None:
     entries = load_catalogue_entries()
     catalogue = {line_id: entry["subtitle"] for line_id, entry in entries.items()}
@@ -631,7 +689,7 @@ def run_batch(
         render_line(
             engine, line_id, text, out_ogg, chain,
             model=model, reference_wav=reference_wav, exaggeration=exaggeration, cfg_weight=cfg_weight,
-            temperature=temperature,
+            temperature=temperature, noisered_profile=noisered_profile, noisered_amount=noisered_amount,
         )
 
     sounds = json.loads(SOUNDS_JSON.read_text(encoding="utf-8"))
@@ -666,6 +724,14 @@ def main() -> int:
     parser.add_argument("--chain", help="sox chain name: a SOX_CHAINS key for --engine piper, "
                                          "a CLONE_POST_CHAINS key for --engine chatterbox "
                                          "(required for --batch; --sample defaults to all of the engine's chains)")
+    parser.add_argument("--noisered-profile", type=Path, dest="noisered_profile",
+                         help="sox noise profile file for a light output-side `noisered` pass "
+                              "(round nine, AUDIO-DEC-006 final amendment; --engine chatterbox only) -- "
+                              "built ahead of time from a silent stretch of the reference's own source "
+                              "recording, e.g. `sox source.mp3 -n trim 0.1 0.7 noiseprof profile.prof`")
+    parser.add_argument("--noisered-amount", type=float, default=DEFAULT_NOISERED_AMOUNT, dest="noisered_amount",
+                         help="noisered strength, only used with --noisered-profile (default %(default)s; "
+                              "Kevin's approved range is 0.08-0.10)")
     parser.add_argument("--out", type=Path, default=CACHE_DIR / "samples", help="--sample output directory")
     args = parser.parse_args()
 
@@ -682,6 +748,7 @@ def main() -> int:
             run_sample(
                 args.out, args.engine, chains, models=models, reference_wav=args.reference_wav,
                 exaggeration=args.exaggeration, cfg_weight=args.cfg_weight, temperature=args.temperature,
+                noisered_profile=args.noisered_profile, noisered_amount=args.noisered_amount,
             )
         else:
             if not args.chain:
@@ -693,6 +760,7 @@ def main() -> int:
             run_batch(
                 args.engine, args.chain, model=args.model, reference_wav=args.reference_wav,
                 exaggeration=args.exaggeration, cfg_weight=args.cfg_weight, temperature=args.temperature,
+                noisered_profile=args.noisered_profile, noisered_amount=args.noisered_amount,
             )
     except PipelineError as exc:
         print(f"error: {exc}", file=sys.stderr)
