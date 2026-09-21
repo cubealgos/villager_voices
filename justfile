@@ -56,11 +56,9 @@ voices-sample:
 voices-batch MODEL CHAIN:
     python3 tools/voices/render.py --batch --model {{MODEL}} --chain {{CHAIN}}
 
-# The Modrinth icon: no generator exists yet (no design has been decided,
-# docs/spec/README.md "Open questions gathered"). Render it by hand and place it at
-# docs/modrinth/icon.png once the icon itself is designed.
-# The Modrinth icon: this mod's own parchment-and-speech-bubble badge (tools/icon.py), not the
-# cubealgos Create-family navy one -- villager_voices is not a Create Fly add-on.
+# The Modrinth icon: the vanilla villager's own head, real 3D rendered from the villager entity
+# texture, on the plain cubealgos navy badge with a cream speech bubble (VV-19, tools/icon.py) --
+# navy badge with no grid, since villager_voices is not a Create Fly add-on.
 icon:
     python3 tools/icon.py
 
