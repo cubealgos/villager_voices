@@ -2,8 +2,12 @@ Wait, they talk now? is MIT-licensed (LICENSE).
 
 It runs on and is built against:
 - Fabric Loader and Fabric API (FabricMC), Apache-2.0.
-- Minecraft (Mojang): this mod adds no block, item, or entity of its own at this stage; no Mojang
-  asset (texture, model, or sound) is copied.
+- Minecraft (Mojang): this mod adds no block, item, or entity of its own at this stage. The
+  Modrinth listing icon (`docs/modrinth/icon.png`) is a render of vanilla's own villager head
+  texture (`minecraft:villager`, `assets/minecraft/textures/entity/villager/villager.png`),
+  composed onto the plain cubealgos navy badge (no grid -- this mod is not a Create Fly add-on)
+  at build time by `tools/icon.py` from a local Minecraft client jar; no asset file is copied
+  into this repo, only the rendered composite `icon.png` (`just icon`).
 
 Piper TTS (github.com/rhasspy/piper, archived, MIT — the frozen snapshot, not the actively
 maintained GPL-3.0 `OHF-Voice/piper1-gpl` fork) generates the villager voice lines: a build-time
