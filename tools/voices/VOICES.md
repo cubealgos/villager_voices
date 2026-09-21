@@ -568,3 +568,59 @@ list was missing `attrs` as an explicit dependency — `chatterbox-tts`'s own de
 and a later `attr.has(...)` call then crashes with an `AttributeError` instead of the plain
 `ModuleNotFoundError` the try/except was meant to produce. Pinned `attrs` explicitly in
 `CLONE_PACKAGES` so a fresh `setup.py --clone` doesn't hit the same crash.
+
+## Round 11: the 64-line batch, rendered per emotion class (`AUDIO-DEC-006` round-ten amendment)
+
+Kevin, on round ten's twelve-line sample: "these are good for now, generate all voice lines so we
+can actually try the mod." All 64 lines re-rendered against round ten's approved per-class
+references/settings (`LINES-DEC-002`) — nothing about the classes, event mapping, or reference
+segments changed; this round only scales round ten's approach to the full catalogue and ships it,
+replacing the round-nine single-reference batch at the same shipped paths.
+
+### Two-seed selection, same rule as round nine, applied per class
+
+Every line rendered at `render.derive_seed(line_id)` (seed `a`) and a scratchpad-only alternate
+(seed `b`), against its own class's reference/settings; kept whichever measured the higher
+pitch-lock fraction, ties broken by the lower metallic ratio (2.5-5kHz energy / 150-600Hz energy).
+19 of 64 lines measured as outliers (ratio or noise floor over one standard deviation worse than the
+batch's own mean) and got a third-seed retry, kept only if it improved the flagged metric: 15 of 19
+improved.
+
+### A crash mid-batch, and what it did and didn't cost
+
+The first driver run completed the full 128-render two-seed first pass (2358s) then crashed in the
+outlier pass on a dict-key bug (`metrics_c["floor"]` where the key is actually `"floor_dbfs"`) —
+after finishing measurement and before the log line that used it, so no work was lost: every
+first-pass winner was already saved to `progress.json` and `work/`. A resume script reused that file
+and the already-rendered candidates verbatim (including one outlier's seed-c render that had already
+completed right before the crash — re-measured, not re-rendered) rather than restarting, so the
+crash cost the driver's own overhead, not any render time.
+
+### Two things the automated selection rule missed, caught by explicit checks afterward
+
+The "keep whichever improves the flagged metric" rule is narrow by design (round nine's own
+methodology) and let two problems through:
+
+* **`killed.2`'s `reseed3` improved its flagged noise floor (-60.5 → -62.5dBFS) but rendered only
+  0.28s / 4 voiced frames for "This is not fair." (4 words) — a truncated clip.** A duration sanity
+  check across all 19 outliers (winner duration < 50% of the shorter original candidate) is the only
+  one that fired; `killed.2` reverted to its original two-seed winner (seed b, 1.20s).
+* **`restock.1`'s two-seed pick (seed b, on a 0.007 pitch-lock margin over seed a) ran 5.517s, over
+  the 4s validation cap** — never flagged as an outlier at all (its ratio/floor were unremarkable),
+  since the two-seed `better()` rule never weighed duration. An explicit duration/format/peak
+  validation pass across all 64 *final* files (not just outliers) caught it; switched to seed a
+  (3.357s, an effectively tied pitch-lock).
+
+Both are recorded in `scratchpad/voices-batch-2/results.json`
+(`duration_fixup`/`reseed3_rejected` fields) and applied directly to the shipped files. Every one of
+the 64 shipped `.ogg` files was independently re-validated afterward (mono, 44.1kHz, under 4s, peak
+in [-4.5, -1.5]dBFS) with an external `soxi`/`sox stat` pass, not just the driver's own in-process
+measurement — zero failures on the final set.
+
+### Not a redesign
+
+`render.py`'s `--reference-dir`/`--mood-override` dispatch (round ten) is unchanged; this round adds
+no new committed code, only a scratchpad two-seed/outlier driver (`render_batch2.py`/
+`resume_batch2.py`, same precedent as every prior round's own selection script, never committed).
+Full per-line detail (seed, duration, pitch-lock, ratio, floor, peak) is in
+`scratchpad/voices-batch-2/README.md` (gitignored, not committed).

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Emotion classes: the 64 voice lines are no longer all cloned from one reference/setting pair.
+  Six emotion classes (`calm`, `pleased`, `annoyed`, `hurt`, `alarmed`, `gentle`) are mapped one per
+  event (`LINES-DEC-002`), each conditioned on its own matched 15-25s reference segment (scored by
+  pitch/energy variance and speaking rate, not picked by ear) and its own Chatterbox
+  `exaggeration`/`cfg_weight`, still all from the same public-domain giordano recording and the same
+  `open_warm_mix` chain. Every catalogue line carries an optional `mood` field (`common`'s
+  `CatalogueCodec`, loader-free, read only by the voice pipeline) so `render.py --batch
+  --reference-dir` resolves each line's reference/settings automatically. Fixes lines that
+  previously "always sound surprised" regardless of what they're reacting to (`VV-11`).
 - Real voice lines: the 64 near-silent placeholder sound events are replaced, file-for-file, by
   AI-generated speech — Chatterbox (Resemble AI, MIT), conditioned on a public-domain human-voice
   reference (Greg Giordano's LibriVox reading of Dostoyevsky's *Short Stories*), the `open_warm_mix`

@@ -47,7 +47,39 @@ explicitly gates the batch on that approval.
 
 ## The clone engine (`--engine chatterbox`, `AUDIO-DEC-006`)
 
-**The shipped 1.0 batch, final (round nine, `AUDIO-DEC-006` final amendment):**
+**The shipped 1.0 batch, final (VV-11 round ten/eleven, `AUDIO-DEC-006` round-ten amendment,
+`domains/reaction-lines.md` `LINES-DEC-002`):** one reference/setting pair *per emotion class*, not
+one shared by all 64 lines (round nine's own single-reference shape, kept below for history) —
+Kevin, on round nine's batch: "they always sound surprised; it is not conveying the correct
+emotions for everything yet."
+
+```
+tools/voices/.venv-clone/bin/python tools/voices/render.py \
+    --batch --engine chatterbox \
+    --reference-dir /path/to/six-per-class-references/ \
+    --chain open_warm_mix \
+    --temperature 0.8 \
+    --noisered-profile /path/to/giordano_noise.prof --noisered-amount 0.09
+```
+
+`--reference-dir` (VV-11 round ten) is a directory of `ref_<mood>.wav` files, one per class (`calm`/
+`pleased`/`annoyed`/`hurt`/`alarmed`/`gentle`) — `--batch` resolves each line's own catalogue `mood`
+field against this directory and `reference.EMOTION_SETTINGS` automatically, so `--exaggeration`/
+`--cfg` are left unset above (an explicit value would override every line's own class default
+uniformly, defeating the point). `--mood-override <class>` forces every line in one run to a single
+class instead, for testing. `--reference` (a single fixed WAV, round nine's own shape) still works
+and is mutually exclusive with `--reference-dir` — see "Round nine, single-reference (retired for
+the shipped batch, kept for history)" below for that exact command and how to build the one
+reference it needs. Building the six per-class reference WAVs is
+`reference.build_emotion_reference_wav` — see `tools/voices/reference.py`'s
+`EMOTION_REFERENCE_SEGMENTS` table for the exact offsets into the same giordano source recording,
+and `tools/voices/VOICES.md` "Round 10" for how they were picked and denoised.
+
+Run with the clone venv's own `python` (`tools/voices/.venv-clone/`, `setup.py --clone`) — this file
+still imports cleanly without Chatterbox/torch installed (`test_render.py` covers argument
+validation only, never a real render), but actually generating audio needs the venv.
+
+### Round nine, single-reference (retired for the shipped batch, kept for history)
 
 ```
 tools/voices/.venv-clone/bin/python tools/voices/render.py \
@@ -57,10 +89,6 @@ tools/voices/.venv-clone/bin/python tools/voices/render.py \
     --exaggeration 0.5 --cfg 0.2 --temperature 0.8 \
     --noisered-profile /path/to/giordano_noise.prof --noisered-amount 0.09
 ```
-
-Run with the clone venv's own `python` (`tools/voices/.venv-clone/`, `setup.py --clone`) — this file
-still imports cleanly without Chatterbox/torch installed (`test_render.py` covers argument
-validation only, never a real render), but actually generating audio needs the venv.
 
 **Building the reference and noise-profile files** (both outside the repo, never committed —
 `COMP-REQ-002`; sourced from Greg Giordano's LibriVox reading of Dostoyevsky's *Short Stories*,
@@ -113,17 +141,21 @@ seed is derived deterministically from its own line id (`render.derive_seed`, `A
 rerun reproduces byte-identical output (verified: identical MD5 across two runs of the same
 seed/text/reference on CPU).
 
-**The actually-shipped 1.0 batch used a two-seed pick per line, not `render.derive_seed` alone.**
-Kevin's own steer for this batch: render each line at `derive_seed(line_id)` and one exploration
-alternate, keep whichever measures the higher pitch-lock fraction (round three's own
-autocorrelation method), and re-render an outlier once more at a third seed if its metrics still
-stood out after that. This selection step is a one-off scratchpad script, the same pattern as
-round three/six/seven's own ad-hoc seed/reference-picking tools (never committed here, per
-`tools/voices/VOICES.md`'s own precedent) — the command above reproduces *a* valid render of every
-line at its `derive_seed` value, but not necessarily the exact seed that shipped for a line where
-the alternate won. The shipped batch's own line-by-line seed record (which label won, the seed
-value, duration, pitch-lock fraction, ratio) travels with the release rather than living in this
-file.
+**Both the round-nine and the round-ten/eleven shipped batches used a two-seed pick per line, not
+`render.derive_seed` alone.** Kevin's own steer: render each line at `derive_seed(line_id)` and one
+exploration alternate, keep whichever measures the higher pitch-lock fraction (round three's own
+autocorrelation method, ties broken by the lower "metallic" ratio), and re-render an outlier once
+more at a third seed if its metrics still stood out after that, kept only if it actually improved on
+the metric that flagged it *and* passed a duration sanity check (the emotion-class batch's own
+addition, round eleven — one `reseed3` candidate improved its flagged noise-floor metric while
+rendering a truncated 0.28s clip for a 4-word line; caught and reverted before shipping). This
+selection step is a one-off scratchpad script, the same pattern as round three/six/seven's own
+ad-hoc seed/reference-picking tools (never committed here, per `tools/voices/VOICES.md`'s own
+precedent) — the command above reproduces *a* valid render of every line at its `derive_seed` value,
+but not necessarily the exact seed that shipped for a line where the alternate won. The shipped
+batch's own line-by-line seed record (which label won, the seed value, duration, pitch-lock
+fraction, ratio, noise floor) travels with the release rather than living in this file
+(`scratchpad/voices-batch-2/README.md`'s own per-line table, gitignored, for the current batch).
 
 ## The pipeline, in order
 
