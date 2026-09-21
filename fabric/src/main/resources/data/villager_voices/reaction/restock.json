@@ -1,24 +1,28 @@
 {
   "lines": [
     {
-      "subtitle": "Hmm, restocking.",
+      "subtitle": "Just restocking, one moment.",
       "sound": "villager_voices:reaction.restock.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
-      "subtitle": "More goods, fresh in.",
+      "subtitle": "Fresh goods, right this way.",
       "sound": "villager_voices:reaction.restock.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
-      "subtitle": "Ah, business never sleeps.",
+      "subtitle": "Business never really stops.",
       "sound": "villager_voices:reaction.restock.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
-      "subtitle": "Back to work.",
+      "subtitle": "Back to work, I suppose.",
       "sound": "villager_voices:reaction.restock.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     }
   ]
 }

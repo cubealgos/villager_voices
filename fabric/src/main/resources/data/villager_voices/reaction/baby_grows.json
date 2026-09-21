@@ -1,24 +1,28 @@
 {
   "lines": [
     {
-      "subtitle": "Ha! Grown up already.",
+      "subtitle": "Already grown up.",
       "sound": "villager_voices:reaction.baby_grows.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
-      "subtitle": "My, how time flies.",
+      "subtitle": "My, how the time flies.",
       "sound": "villager_voices:reaction.baby_grows.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
-      "subtitle": "Ah, look at them now.",
+      "subtitle": "Look at them now.",
       "sound": "villager_voices:reaction.baby_grows.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     },
     {
-      "subtitle": "All grown up.",
+      "subtitle": "All grown up, just like that.",
       "sound": "villager_voices:reaction.baby_grows.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "calm"
     }
   ]
 }

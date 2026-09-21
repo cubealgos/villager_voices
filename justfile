@@ -44,15 +44,17 @@ spec-sync:
 voices-setup:
     python3 tools/voices/setup.py
 
-# 3 lines x each candidate voice model, for Kevin's timbre approval before the full batch
-# (tools/voices/README.md; docs/spec/domains/audio.md AUDIO-FAIL-003). Never touches shipped assets.
+# 3 lines x each candidate voice model x each sox chain, for Kevin's timbre approval before the
+# full batch (tools/voices/README.md; docs/spec/domains/audio.md AUDIO-FAIL-003). Never touches
+# shipped assets.
 voices-sample:
     python3 tools/voices/render.py --sample
 
-# All 64 lines against one approved voice model, replacing the shipped placeholder .ogg files and
-# rewriting sounds.json (AUDIO-REQ-003). Do not run before Kevin has approved a sample timbre.
-voices-batch MODEL:
-    python3 tools/voices/render.py --batch --model {{MODEL}}
+# All 64 lines against one approved voice model and sox chain (deep/deeper), replacing the shipped
+# placeholder .ogg files and rewriting sounds.json (AUDIO-REQ-003). Do not run before Kevin has
+# approved a sample timbre.
+voices-batch MODEL CHAIN:
+    python3 tools/voices/render.py --batch --model {{MODEL}} --chain {{CHAIN}}
 
 # The Modrinth icon: the vanilla villager's own head, real 3D rendered from the villager entity
 # texture, on the plain cubealgos navy badge with a cream speech bubble (VV-19, tools/icon.py) --

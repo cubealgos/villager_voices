@@ -58,7 +58,11 @@ class SoundsJsonResourcesTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void everySoundsJsonEntryCarriesItsMatchingSubtitleKeyAndTheSharedPlaceholderFile() throws IOException {
+    void everySoundsJsonEntryCarriesItsMatchingSubtitleKeyAndItsOwnFile() throws IOException {
+        // VV-11 round nine: the shared alpha placeholder (AUDIO-DEC-001) is gone -- every one of
+        // the 64 entries now points at its own file, matching its own event/line number
+        // (AUDIO-REQ-003: only the file's bytes and this pointer change, never the registration or
+        // catalogue format).
         Map<String, Object> sounds = (Map<String, Object>) MiniJson.parse(Files.readString(SOUNDS_JSON));
         for (Map.Entry<String, Object> entry : sounds.entrySet()) {
             String pathKey = entry.getKey(); // e.g. "reaction.trade_completed.1"
@@ -66,16 +70,29 @@ class SoundsJsonResourcesTest {
             assertEquals("subtitles.villager_voices." + pathKey, definition.get("subtitle"),
                 pathKey + ": subtitle key mismatch");
 
+            int lastDot = pathKey.lastIndexOf('.');
+            String expectedFile = "reaction/" + pathKey.substring("reaction.".length(), lastDot)
+                + "_" + pathKey.substring(lastDot + 1);
             List<Object> soundFiles = (List<Object>) definition.get("sounds");
-            assertEquals(List.of("reaction/placeholder"), soundFiles,
-                pathKey + ": every alpha entry shares the one placeholder file (AUDIO-DEC-001, this ticket's Findings)");
+            assertEquals(List.of(expectedFile), soundFiles, pathKey + ": expected its own file " + expectedFile);
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
-    void thePlaceholderOggFileIsGenuinelyPresentAndNonEmpty() throws IOException {
-        Path placeholder = SOUNDS_DIR.resolve("reaction").resolve("placeholder.ogg");
-        assertTrue(Files.exists(placeholder), "missing " + placeholder + " (AUDIO-FAIL-001)");
-        assertTrue(Files.size(placeholder) > 0, placeholder + " must not be an empty file (AUDIO-REQ-002)");
+    void everySoundsJsonEntrySOwnOggFileIsGenuinelyPresentAndNonEmpty() throws IOException {
+        // AUDIO-FAIL-001: a catalogue line whose .ogg is missing at build time must fail loudly,
+        // never ship silently missing -- this is that check, off the disk, against every one of
+        // the 64 real (no longer placeholder) shipped files.
+        Map<String, Object> sounds = (Map<String, Object>) MiniJson.parse(Files.readString(SOUNDS_JSON));
+        for (Map.Entry<String, Object> entry : sounds.entrySet()) {
+            String pathKey = entry.getKey();
+            Map<String, Object> definition = (Map<String, Object>) entry.getValue();
+            List<Object> soundFiles = (List<Object>) definition.get("sounds");
+            String soundFile = (String) soundFiles.get(0);
+            Path oggPath = SOUNDS_DIR.resolve(soundFile + ".ogg");
+            assertTrue(Files.exists(oggPath), pathKey + ": missing " + oggPath + " (AUDIO-FAIL-001)");
+            assertTrue(Files.size(oggPath) > 0, pathKey + ": " + oggPath + " must not be an empty file (AUDIO-REQ-002)");
+        }
     }
 }

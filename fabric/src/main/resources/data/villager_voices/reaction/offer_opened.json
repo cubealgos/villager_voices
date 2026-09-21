@@ -1,24 +1,28 @@
 {
   "lines": [
     {
-      "subtitle": "Lookin' to trade?",
+      "subtitle": "Looking to trade?",
       "sound": "villager_voices:reaction.offer_opened.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "annoyed"
     },
     {
-      "subtitle": "Hmm, what've you got?",
+      "subtitle": "What have you got for me?",
       "sound": "villager_voices:reaction.offer_opened.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "annoyed"
     },
     {
-      "subtitle": "Ah, a customer.",
+      "subtitle": "Ah, a customer. Come, look.",
       "sound": "villager_voices:reaction.offer_opened.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "annoyed"
     },
     {
-      "subtitle": "Step right up.",
+      "subtitle": "Step right up, friend.",
       "sound": "villager_voices:reaction.offer_opened.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "annoyed"
     }
   ]
 }

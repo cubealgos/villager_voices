@@ -13,7 +13,8 @@ from pathlib import Path
 
 MAP_FILE = Path("docs/map.md")
 MAP_DIR = Path("docs/map")
-IGNORED_DIRS = {"build", ".gradle", ".worktrees", ".git", ".gitkontor", "run", "node_modules", "__pycache__"}
+IGNORED_DIRS = {"build", ".gradle", ".worktrees", ".git", ".gitkontor", "run", "node_modules", "__pycache__",
+                 ".cache", ".venv-clone", ".venv", "venv"}
 SOURCE_SETS = ("main", "test", "gametest")
 MODIFIERS = {"public", "protected", "private", "static", "final", "abstract", "default", "synchronized",
              "native", "strictfp", "sealed", "non-sealed", "transient", "volatile"}

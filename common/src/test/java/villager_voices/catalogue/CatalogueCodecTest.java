@@ -134,4 +134,117 @@ class CatalogueCodecTest {
             id -> true));
         assertTrue(ex.getMessage().contains("not a namespaced id") || ex.getMessage().contains("grunt id"), ex.getMessage());
     }
+
+    // VV-11 round six: the optional "spoken" field (AUDIO-DEC-006 amendment) -- the voice
+    // pipeline's generator-only TTS input override for an expressively spelled subtitle.
+
+    @Test
+    void parsesALineWithASpokenOverride() {
+        List<Line> lines = CatalogueCodec.parseEventFile("sleep",
+            "{\"lines\": [{\"subtitle\": \"Zzz.\", \"sound\": \"villager_voices:reaction.sleep.3\", "
+                + "\"spoken\": \"Shh.\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("Shh.", lines.get(0).spoken());
+        assertEquals("Zzz.", lines.get(0).text());
+    }
+
+    @Test
+    void parsesALineWithoutASpokenOverrideAsNull() {
+        List<Line> lines = CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals(null, lines.get(0).spoken());
+    }
+
+    @Test
+    void rejectsABlankSpokenOverride() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", \"spoken\": \"  \"}]}",
+            id -> true));
+        assertTrue(ex.getMessage().contains("spoken"), ex.getMessage());
+    }
+
+    @Test
+    void aGruntAndASpokenOverrideCoexist() {
+        List<Line> lines = CatalogueCodec.parseEventFile("killed",
+            "{\"lines\": [{\"subtitle\": \"Wha-- no!\", \"sound\": \"villager_voices:reaction.killed.3\", "
+                + "\"grunt\": \"minecraft:entity.villager.hurt\", \"spoken\": \"What, no!\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("minecraft:entity.villager.hurt", lines.get(0).grunt());
+        assertEquals("What, no!", lines.get(0).spoken());
+    }
+
+    // VV-11 round ten: the optional "mood" field (LINES-DEC-002) -- the voice pipeline's
+    // per-event emotion class, read only by tools/voices/render.py's generator.
+
+    @Test
+    void parsesALineWithAMood() {
+        List<Line> lines = CatalogueCodec.parseEventFile("panic",
+            "{\"lines\": [{\"subtitle\": \"Run!\", \"sound\": \"villager_voices:reaction.panic.1\", "
+                + "\"mood\": \"alarmed\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("alarmed", lines.get(0).mood());
+    }
+
+    @Test
+    void parsesALineWithoutAMoodAsNull() {
+        List<Line> lines = CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals(null, lines.get(0).mood());
+    }
+
+    @Test
+    void rejectsABlankMood() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", \"mood\": \"  \"}]}",
+            id -> true));
+        assertTrue(ex.getMessage().contains("mood"), ex.getMessage());
+    }
+
+    @Test
+    void rejectsAnUnknownMood() {
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class, () -> CatalogueCodec.parseEventFile("hurt",
+            "{\"lines\": [{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", "
+                + "\"mood\": \"furious\"}]}",
+            id -> true));
+        assertTrue(ex.getMessage().contains("furious"), ex.getMessage());
+    }
+
+    @Test
+    void rejectsDisagreeingMoodsInTheSameFile() {
+        String json = "{\"lines\": ["
+            + "{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", \"mood\": \"hurt\"},"
+            + "{\"subtitle\": \"Ow!\", \"sound\": \"villager_voices:reaction.hurt.2\", \"mood\": \"annoyed\"}]}";
+        CatalogueLoadException ex = assertThrows(CatalogueLoadException.class,
+            () -> CatalogueCodec.parseEventFile("hurt", json, id -> true));
+        assertTrue(ex.getMessage().contains("disagrees"), ex.getMessage());
+    }
+
+    @Test
+    void allowsSomeLinesToOmitMoodWhileOthersSetIt() {
+        String json = "{\"lines\": ["
+            + "{\"subtitle\": \"Watch it!\", \"sound\": \"villager_voices:reaction.hurt.1\", \"mood\": \"hurt\"},"
+            + "{\"subtitle\": \"Ow!\", \"sound\": \"villager_voices:reaction.hurt.2\"}]}";
+        List<Line> lines = CatalogueCodec.parseEventFile("hurt", json, id -> true);
+        assertEquals("hurt", lines.get(0).mood());
+        assertEquals(null, lines.get(1).mood());
+    }
+
+    @Test
+    void aGruntASpokenOverrideAndAMoodCoexist() {
+        List<Line> lines = CatalogueCodec.parseEventFile("killed",
+            "{\"lines\": [{\"subtitle\": \"Wha-- no!\", \"sound\": \"villager_voices:reaction.killed.3\", "
+                + "\"grunt\": \"minecraft:entity.villager.hurt\", \"spoken\": \"What, no!\", \"mood\": \"alarmed\"}]}",
+            id -> true);
+        assertEquals(1, lines.size());
+        assertEquals("minecraft:entity.villager.hurt", lines.get(0).grunt());
+        assertEquals("What, no!", lines.get(0).spoken());
+        assertEquals("alarmed", lines.get(0).mood());
+    }
 }

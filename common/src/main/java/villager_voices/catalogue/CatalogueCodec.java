@@ -3,6 +3,7 @@ package villager_voices.catalogue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,10 +12,13 @@ import java.util.regex.Pattern;
  * Decodes one {@code data/villager_voices/reaction/<event>.json} file's text into its {@link Line}s
  * (docs/spec/domains/reaction-lines.md §2). Field names, confirmed by this ticket (VV-3) exactly as
  * §2 already showed: a top-level JSON object with a {@code "lines"} array, each entry an object
- * with a {@code "subtitle"} string, a {@code "sound"} string, and (VV-18) an optional {@code
- * "grunt"} string -- a namespaced vanilla villager {@code SoundEvent} id, shape-validated here only;
- * whether it actually names a registered event is the loader's own check, same as for {@code sound}
- * (docs/spec/domains/audio.md {@code AUDIO-REQ-007}).
+ * with a {@code "subtitle"} string, a {@code "sound"} string, (VV-18) an optional {@code "grunt"}
+ * string -- a namespaced vanilla villager {@code SoundEvent} id, shape-validated here only; whether
+ * it actually names a registered event is the loader's own check, same as for {@code sound}
+ * (docs/spec/domains/audio.md {@code AUDIO-REQ-007}) -- (VV-11 round six) an optional
+ * {@code "spoken"} string, validated here as non-blank only; nothing loader-side ever reads it --
+ * and (VV-11 round ten, {@code LINES-DEC-002}) an optional {@code "mood"} string, one of
+ * {@link #KNOWN_MOODS}, required to be the same across every line of one event file.
  */
 public final class CatalogueCodec {
 
@@ -28,6 +32,15 @@ public final class CatalogueCodec {
      * names a vanilla event instead (e.g. {@code minecraft:entity.villager.trade}).
      */
     private static final Pattern NAMESPACED_ID = Pattern.compile("^[a-z0-9_.-]+:[a-z0-9_./-]+$");
+
+    /**
+     * The six emotion classes {@code docs/spec/domains/reaction-lines.md}'s {@code LINES-DEC-002}
+     * defines over the 16 events (VV-11 round ten) -- {@code gentle} is the short id for
+     * "gentle/pleading". Closed set, unlike {@code grunt}'s free-form vanilla id: a mood is this
+     * mod's own vocabulary, so a typo is caught here rather than silently doing nothing in
+     * {@code tools/voices/render.py}'s per-mood dispatch.
+     */
+    public static final Set<String> KNOWN_MOODS = Set.of("calm", "pleased", "annoyed", "hurt", "alarmed", "gentle");
 
     private CatalogueCodec() {
     }
@@ -44,8 +57,11 @@ public final class CatalogueCodec {
      * @return an immutable, non-empty list of lines
      * @throws CatalogueLoadException if the JSON is malformed, the shape doesn't match §2, the file
      *     names no lines at all, a sound id doesn't follow {@code villager_voices:reaction.<event>.<n>}
-     *     or names a different event than {@code eventId}, {@code soundExists} rejects an id, or a
-     *     present {@code grunt} is blank or not a valid namespaced id (VV-18)
+     *     or names a different event than {@code eventId}, {@code soundExists} rejects an id, a
+     *     present {@code grunt} is blank or not a valid namespaced id (VV-18), a present
+     *     {@code spoken} is blank (VV-11 round six), or a present {@code mood} is blank, not one of
+     *     {@link #KNOWN_MOODS}, or disagrees with another line's {@code mood} in the same file
+     *     (VV-11 round ten, {@code LINES-DEC-002})
      */
     public static List<Line> parseEventFile(String eventId, String json, Predicate<String> soundExists) {
         String fileLabel = "data/villager_voices/reaction/" + eventId + ".json";
@@ -64,6 +80,7 @@ public final class CatalogueCodec {
         }
 
         List<Line> lines = new ArrayList<>();
+        String eventMood = null;
         int index = 0;
         for (Object entry : list) {
             index++;
@@ -108,7 +125,38 @@ public final class CatalogueCodec {
                 grunt = g;
             }
 
-            lines.add(new Line(subtitle, soundId, grunt));
+            Object spokenRaw = lineObj.get("spoken");
+            String spoken = null;
+            if (spokenRaw != null) {
+                if (!(spokenRaw instanceof String s) || s.isBlank()) {
+                    throw new CatalogueLoadException(fileLabel + ": entry " + index
+                        + "'s \"spoken\" must be a non-blank string if present");
+                }
+                spoken = s;
+            }
+
+            Object moodRaw = lineObj.get("mood");
+            String mood = null;
+            if (moodRaw != null) {
+                if (!(moodRaw instanceof String m) || m.isBlank()) {
+                    throw new CatalogueLoadException(fileLabel + ": entry " + index
+                        + "'s \"mood\" must be a non-blank string if present");
+                }
+                if (!KNOWN_MOODS.contains(m)) {
+                    throw new CatalogueLoadException(fileLabel + ": entry " + index + "'s mood \"" + m
+                        + "\" is not one of " + KNOWN_MOODS);
+                }
+                if (eventMood == null) {
+                    eventMood = m;
+                } else if (!eventMood.equals(m)) {
+                    throw new CatalogueLoadException(fileLabel + ": entry " + index + "'s mood \"" + m
+                        + "\" disagrees with an earlier line's mood \"" + eventMood
+                        + "\" -- mood is per event, every line in this file must agree");
+                }
+                mood = m;
+            }
+
+            lines.add(new Line(subtitle, soundId, grunt, spoken, mood));
         }
 
         if (lines.isEmpty()) {

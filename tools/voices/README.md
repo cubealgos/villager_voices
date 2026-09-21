@@ -1,15 +1,18 @@
-# `tools/voices/` — the Piper pipeline
+# `tools/voices/` — the voice pipeline
 
 Build-time-only (`AUDIO-REQ-005`, `docs/spec/domains/audio.md`): generates the real `.ogg` files
 that replace VV-8's placeholder sound, at their existing paths, with zero code, registration, or
 catalogue-format change (`AUDIO-REQ-003`). Never invoked at runtime, never imported by `common` or
-`fabric`'s Java sources, never run by a Gradle task or CI.
+`fabric`'s Java sources, never run by a Gradle task or CI. Two engines (`--engine`): `piper`
+(default, rounds 1–3, kept as the fallback) and `chatterbox` (round four, `AUDIO-DEC-006` — clones
+the vanilla villager's own timbre from its grunt clips; see "The clone engine" below).
 
 ## Setup (once per machine)
 
 ```
 brew install sox                    # if not already present
-python3 tools/voices/setup.py       # fetches the frozen Piper binary + the 3 candidate voice models
+python3 tools/voices/setup.py       # fetches the frozen Piper binary + the 4 candidate voice models
+python3 tools/voices/setup.py --clone   # also sets up the Chatterbox clone-engine venv (needs `uv`)
 ```
 
 `setup.py` needs `gh` (authenticated) and network access — the only thing in this directory that
@@ -21,16 +24,20 @@ works around.
 ## Running it
 
 ```
-just voices-sample                    # 3 lines x each candidate model, for Kevin's timbre approval — never ships
-just voices-batch en_US-joe-medium    # all 64 lines, once a model is approved
+just voices-sample                             # 3 lines x each candidate model x each chain, for Kevin's timbre approval — never ships
+just voices-batch en_US-joe-medium deep         # all 64 lines, once a model AND a chain are approved
 ```
+
+(`just voices-batch` runs the `--engine piper` fallback; the shipped 1.0 batch uses `--engine
+chatterbox` instead — see "The clone engine" below for the exact command.)
 
 `voices-sample` writes to the scratchpad-style `--out` directory (default
 `tools/voices/.cache/samples/`) plus a `README.md` there listing every file with its subtitle,
-derived input text, and model licence — nothing here is copied into `fabric/`'s resources.
+chain, and model licence — nothing here is copied into `fabric/`'s resources. Pass `--model` and/or
+`--chain` to narrow it to one model or one chain instead of the full cross product.
 
-`voices-batch` (`render.py --batch --model <name>`) is the only mode that writes shipped assets: it
-renders all 64 lines to
+`voices-batch` (`render.py --batch --model <name> --chain <deep|deeper>`) is the only mode that
+writes shipped assets: it renders all 64 lines to
 `fabric/src/main/resources/assets/villager_voices/sounds/reaction/<event>_<n>.ogg` and rewrites
 `fabric/src/main/resources/assets/villager_voices/sounds.json` so each of the 64 entries' `"sounds"`
 list points at its own file instead of the shared placeholder — no other part of `sounds.json`, no
@@ -38,18 +45,139 @@ registration, and no catalogue JSON changes (`AUDIO-REQ-003`). **Do not run this
 approved a sample timbre** (`AUDIO-FAIL-003`) — the ticket that ordered this pipeline (`VV-11`)
 explicitly gates the batch on that approval.
 
+## The clone engine (`--engine chatterbox`, `AUDIO-DEC-006`)
+
+**The shipped 1.0 batch, final (VV-11 round ten/eleven, `AUDIO-DEC-006` round-ten amendment,
+`domains/reaction-lines.md` `LINES-DEC-002`):** one reference/setting pair *per emotion class*, not
+one shared by all 64 lines (round nine's own single-reference shape, kept below for history) —
+Kevin, on round nine's batch: "they always sound surprised; it is not conveying the correct
+emotions for everything yet."
+
+```
+tools/voices/.venv-clone/bin/python tools/voices/render.py \
+    --batch --engine chatterbox \
+    --reference-dir /path/to/six-per-class-references/ \
+    --chain open_warm_mix \
+    --temperature 0.8 \
+    --noisered-profile /path/to/giordano_noise.prof --noisered-amount 0.09
+```
+
+`--reference-dir` (VV-11 round ten) is a directory of `ref_<mood>.wav` files, one per class (`calm`/
+`pleased`/`annoyed`/`hurt`/`alarmed`/`gentle`) — `--batch` resolves each line's own catalogue `mood`
+field against this directory and `reference.EMOTION_SETTINGS` automatically, so `--exaggeration`/
+`--cfg` are left unset above (an explicit value would override every line's own class default
+uniformly, defeating the point). `--mood-override <class>` forces every line in one run to a single
+class instead, for testing. `--reference` (a single fixed WAV, round nine's own shape) still works
+and is mutually exclusive with `--reference-dir` — see "Round nine, single-reference (retired for
+the shipped batch, kept for history)" below for that exact command and how to build the one
+reference it needs. Building the six per-class reference WAVs is
+`reference.build_emotion_reference_wav` — see `tools/voices/reference.py`'s
+`EMOTION_REFERENCE_SEGMENTS` table for the exact offsets into the same giordano source recording,
+and `tools/voices/VOICES.md` "Round 10" for how they were picked and denoised.
+
+Run with the clone venv's own `python` (`tools/voices/.venv-clone/`, `setup.py --clone`) — this file
+still imports cleanly without Chatterbox/torch installed (`test_render.py` covers argument
+validation only, never a real render), but actually generating audio needs the venv.
+
+### Round nine, single-reference (retired for the shipped batch, kept for history)
+
+```
+tools/voices/.venv-clone/bin/python tools/voices/render.py \
+    --batch --engine chatterbox \
+    --reference /path/to/ref_giordano_denoised.wav \
+    --chain open_warm_mix \
+    --exaggeration 0.5 --cfg 0.2 --temperature 0.8 \
+    --noisered-profile /path/to/giordano_noise.prof --noisered-amount 0.09
+```
+
+**Building the reference and noise-profile files** (both outside the repo, never committed —
+`COMP-REQ-002`; sourced from Greg Giordano's LibriVox reading of Dostoyevsky's *Short Stories*,
+public domain, `tools/voices/VOICES.md` "Round 6"/"Round 7"/"Round 9"):
+
+```
+sox giordano_45-73s.wav /tmp/ref_giordano_original.wav norm -3
+sox giordano_source.mp3 -n trim 0.1 0.7 noiseprof /tmp/giordano_noise.prof
+sox /tmp/ref_giordano_original.wav /tmp/ref_giordano_denoised.wav noisered /tmp/giordano_noise.prof 0.1
+```
+
+The first line builds the plain (non-denoised) reference (45s-73s of the source recording, round
+seven's own cleanest-stretch pick — `norm -3` only, no lowpass); the second builds a noise profile
+from 0.1s-0.8s of the *source* file, before the reader's first word (round eight's own silent
+stretch); the third applies that profile to the reference itself at `noisered`'s own default
+strength `0.1` so the clone doesn't learn the room (round eight/nine, "denoised"). The *output-side*
+`noisered` pass (`--noisered-profile`/`--noisered-amount` above) reuses the same profile file at a
+lighter `0.08`-`0.10` (round nine's own approved range, `DEFAULT_NOISERED_AMOUNT = 0.09`) — two
+separate applications of the same profile, one to the reference before conditioning, one to each
+line's generated output.
+
+**Exploring other references/chains** (sample round, retired history, other voice-cloning
+candidates): `reference.build_named_reference` builds a reference from vanilla's own clips instead
+of a human voice —
+
+```
+cd tools/voices && .venv-clone/bin/python -c "
+from pathlib import Path
+import reference
+reference.build_named_reference(
+    'all_warm', Path('/somewhere/outside/the/repo/reference.wav'), Path('/tmp/reference-scratch'),
+    lowpass_hz=7000,
+)
+"
+```
+
+`REFERENCE_SETS` in `reference.py` names four: `all` (every villager clip vanilla ships), `talking`
+(idle+haggle+yes only — the ones that read as speech), `idle` (idle only, the smallest), `all_warm`
+(round five, `AUDIO-DEC-006` amendment: `all` minus the four clipped `hit*` clips). This vanilla-clip
+approach is retired for the shipped batch (round six replaced it with the giordano human-voice
+reference above) but stays in the codebase, unrelated to and unaffected by that choice. `--chain`
+selects a `CLONE_POST_CHAINS` entry — `open_warm_mix` (round nine, the shipped chain), the earlier
+`open`/`open_warm`/`open_warm_body`/`open_warm_body_gate`/`dry`/`open_tempo` (rounds seven/eight),
+or the oldest `warm`/`soft`/`plain-warm`/`tail`/`none` (rounds four/five) — see `render.py`'s own
+`CLONE_POST_CHAINS` comments for what each does, and `tools/voices/VOICES.md` for why. `--exaggeration`/
+`--cfg`/`--temperature` map directly to Chatterbox's own `exaggeration`/`cfg_weight`/`temperature`
+generation parameters (round seven's approved delivery setting is `0.5`/`0.2`/`0.8`, the shipped
+batch's own values above — `docs/spec/domains/audio.md` §3 "Delivery length"). Every line's torch
+seed is derived deterministically from its own line id (`render.derive_seed`, `AUDIO-REQ-006`) so a
+rerun reproduces byte-identical output (verified: identical MD5 across two runs of the same
+seed/text/reference on CPU).
+
+**Both the round-nine and the round-ten/eleven shipped batches used a two-seed pick per line, not
+`render.derive_seed` alone.** Kevin's own steer: render each line at `derive_seed(line_id)` and one
+exploration alternate, keep whichever measures the higher pitch-lock fraction (round three's own
+autocorrelation method, ties broken by the lower "metallic" ratio), and re-render an outlier once
+more at a third seed if its metrics still stood out after that, kept only if it actually improved on
+the metric that flagged it *and* passed a duration sanity check (the emotion-class batch's own
+addition, round eleven — one `reseed3` candidate improved its flagged noise-floor metric while
+rendering a truncated 0.28s clip for a 4-word line; caught and reverted before shipping). This
+selection step is a one-off scratchpad script, the same pattern as round three/six/seven's own
+ad-hoc seed/reference-picking tools (never committed here, per `tools/voices/VOICES.md`'s own
+precedent) — the command above reproduces *a* valid render of every line at its `derive_seed` value,
+but not necessarily the exact seed that shipped for a line where the alternate won. The shipped
+batch's own line-by-line seed record (which label won, the seed value, duration, pitch-lock
+fraction, ratio, noise floor) travels with the release rather than living in this file
+(`scratchpad/voices-batch-2/README.md`'s own per-line table, gitignored, for the current batch).
+
 ## The pipeline, in order
 
-1. **Input text** (`derive_input_text` in `render.py`): a short nonsense/CV-syllable string per
-   line, deterministic from `(line_id, subtitle)` — never the subtitle's own English words
-   (audio.md §3 "Input"; Piper needs phonemes to shape, not a sentence it would pronounce as
-   English). Editing one line's subtitle changes only that line's input text
-   (`test_other_lines_unaffected_by_one_subtitle_edit` in `test_render.py`).
+1. **Input text** (`derive_input_text` in `render.py`): the line's own subtitle, plain English,
+   verbatim (audio.md §3 "Input", `AUDIO-DEC-004`). Round 1 fed Piper a scrambled nonsense/CV-
+   syllable string instead; Kevin's ruling on hearing it: "they're all shit, I can't understand a
+   single thing." `derive_input_text` is now a deliberate no-op, kept as a named function (not
+   inlined) so a future line-specific adjustment has one place to land.
 2. **Piper**: `noise_scale=0`, `noise_w=0`, `length_scale=1.0` — fixed uniformly across the whole
    batch. See "Determinism" below for why.
-3. **sox**: `sox in.wav -r 44100 -c 1 -C 5 out.ogg pitch 500 tempo 0.92` — the exact chain
-   `AUDIO-DEC-002` pins (`pitch 500` = +5 semitones, `tempo` decoupled from pitch), `-C 5` for
-   audio.md §3's "~Vorbis quality 5 (~160kbps)" output-format target.
+3. **sox**, one of two chains (`SOX_CHAINS` in `render.py`), retuned after round 1's sample failed
+   intelligibility (`AUDIO-DEC-004` — "the villagers in Villager News speak normal English with a
+   nasal tone, deep dull voice"):
+   ```
+   sox in.wav -r 44100 -c 1 -C 5 out.ogg pitch {-300|-500} equalizer 1600 1.2q +9 treble -10 4000 lowpass 5000 bass -4 tempo 0.95 norm -3
+   ```
+   `pitch -300`/`-500` — down, never up (round 1's `pitch 500` was +5 semitones **up**, part of why
+   it was unintelligible) — `"deep"` and `"deeper"` respectively; `equalizer 1600 1.2q +9` — a nasal
+   band boost; `treble -10 4000` + `lowpass 5000` — dulled highs; `bass -4` — lows pulled back so
+   "dull" doesn't read as "boomy"; `tempo 0.95` — near round 1's `0.92`; `norm -3` — consistent
+   loudness across lines/models. `-C 5` (unchanged) is audio.md §3's "~Vorbis quality 5
+   (~160kbps)" output-format target.
 
 ## Determinism (`AUDIO-REQ-006`)
 
@@ -77,7 +205,9 @@ and voice-model credit is added by this ticket; the Modrinth listing text is VV-
 
 ## Tests
 
-`test_render.py` (`just test-tools`) covers `derive_input_text` and `load_catalogue` only — pure
-Python, no Piper/sox/network dependency, so it runs the same on a machine that hasn't run
-`setup.py`. Actually rendering audio is exercised manually via `just voices-sample`, not by the
-test suite.
+`test_render.py` (`just test-tools`) covers `derive_input_text`, `load_catalogue`, `derive_seed`,
+`chains_for_engine`, `render_line`'s own argument-validation branches, and (via `reference.py`)
+asset-index resolution against a fake fabric-loom asset cache — all pure Python, no Piper/
+Chatterbox/sox/network dependency, so it runs the same on a machine that has set up neither engine.
+Actually rendering audio (either engine) is exercised manually via `just voices-sample` or the
+clone-engine commands above, not by the test suite.

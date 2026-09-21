@@ -1,24 +1,28 @@
 {
   "lines": [
     {
-      "subtitle": "Ah! Ah! Run!",
+      "subtitle": "Run, everyone, run!",
       "sound": "villager_voices:reaction.panic.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
-      "subtitle": "Danger!",
+      "subtitle": "Danger. Get inside.",
       "sound": "villager_voices:reaction.panic.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
-      "subtitle": "Get away!",
+      "subtitle": "Get away from here!",
       "sound": "villager_voices:reaction.panic.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
-      "subtitle": "Ah, help!",
+      "subtitle": "Somebody help, please!",
       "sound": "villager_voices:reaction.panic.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     }
   ]
 }

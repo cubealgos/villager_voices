@@ -1,24 +1,28 @@
 {
   "lines": [
     {
-      "subtitle": "Raid! Raid!",
+      "subtitle": "A raid! Everyone, take cover!",
       "sound": "villager_voices:reaction.raid_bell.1",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
-      "subtitle": "Take cover!",
+      "subtitle": "Take cover, now!",
       "sound": "villager_voices:reaction.raid_bell.2",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
-      "subtitle": "Ah! Not again!",
+      "subtitle": "Not this again.",
       "sound": "villager_voices:reaction.raid_bell.3",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     },
     {
-      "subtitle": "Everyone, hide!",
+      "subtitle": "Everyone, get inside!",
       "sound": "villager_voices:reaction.raid_bell.4",
-      "grunt": "minecraft:entity.villager.ambient"
+      "grunt": "minecraft:entity.villager.ambient",
+      "mood": "alarmed"
     }
   ]
 }
