@@ -1,22 +1,22 @@
 {
   "lines": [
     {
-      "subtitle": "Cold...",
+      "subtitle": "Something is wrong with me.",
       "sound": "villager_voices:reaction.zombified.1",
       "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Something's wrong...",
+      "subtitle": "I feel so cold.",
       "sound": "villager_voices:reaction.zombified.2",
       "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Hungry...",
+      "subtitle": "I cannot stop this.",
       "sound": "villager_voices:reaction.zombified.3",
       "grunt": "minecraft:entity.villager.ambient"
     },
     {
-      "subtitle": "Can't... think...",
+      "subtitle": "I can barely think straight.",
       "sound": "villager_voices:reaction.zombified.4",
       "grunt": "minecraft:entity.villager.ambient"
     }

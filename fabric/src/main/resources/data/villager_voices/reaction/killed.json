@@ -1,23 +1,22 @@
 {
   "lines": [
     {
-      "subtitle": "No—!",
+      "subtitle": "No, please, not like this.",
       "sound": "villager_voices:reaction.killed.1",
       "grunt": "minecraft:entity.villager.death"
     },
     {
-      "subtitle": "Unfair...",
+      "subtitle": "This is not fair.",
       "sound": "villager_voices:reaction.killed.2",
       "grunt": "minecraft:entity.villager.death"
     },
     {
-      "subtitle": "Wha— no!",
+      "subtitle": "Wait, no!",
       "sound": "villager_voices:reaction.killed.3",
-      "grunt": "minecraft:entity.villager.death",
-      "spoken": "What, no!"
+      "grunt": "minecraft:entity.villager.death"
     },
     {
-      "subtitle": "Argh!",
+      "subtitle": "I did not deserve this.",
       "sound": "villager_voices:reaction.killed.4",
       "grunt": "minecraft:entity.villager.death"
     }

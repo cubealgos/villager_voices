@@ -1,22 +1,22 @@
 {
   "lines": [
     {
-      "subtitle": "Ow! Ow ow ow!",
+      "subtitle": "That hurt.",
       "sound": "villager_voices:reaction.hurt.1",
       "grunt": "minecraft:entity.villager.hurt"
     },
     {
-      "subtitle": "That hurt!",
+      "subtitle": "Stop that, it hurts.",
       "sound": "villager_voices:reaction.hurt.2",
       "grunt": "minecraft:entity.villager.hurt"
     },
     {
-      "subtitle": "Watch it!",
+      "subtitle": "Watch where you swing that.",
       "sound": "villager_voices:reaction.hurt.3",
       "grunt": "minecraft:entity.villager.hurt"
     },
     {
-      "subtitle": "Ah! Rude!",
+      "subtitle": "That was uncalled for.",
       "sound": "villager_voices:reaction.hurt.4",
       "grunt": "minecraft:entity.villager.hurt"
     }

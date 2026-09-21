@@ -1,22 +1,22 @@
 {
   "lines": [
     {
-      "subtitle": "Ha! Promoted!",
+      "subtitle": "I have been promoted!",
       "sound": "villager_voices:reaction.level_up.1",
       "grunt": "minecraft:entity.villager.celebrate"
     },
     {
-      "subtitle": "Business is booming.",
+      "subtitle": "Business is booming these days.",
       "sound": "villager_voices:reaction.level_up.2",
       "grunt": "minecraft:entity.villager.celebrate"
     },
     {
-      "subtitle": "Moving up in the world.",
+      "subtitle": "I am moving up in the world.",
       "sound": "villager_voices:reaction.level_up.3",
       "grunt": "minecraft:entity.villager.celebrate"
     },
     {
-      "subtitle": "Ah, a raise, of sorts.",
+      "subtitle": "Consider this my raise.",
       "sound": "villager_voices:reaction.level_up.4",
       "grunt": "minecraft:entity.villager.celebrate"
     }

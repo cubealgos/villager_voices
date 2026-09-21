@@ -20,16 +20,24 @@ mod, add-on, or show's published dialogue — no such dialogue was found publish
 compare against in any case (research §E2, "Not confirmed"). This is data, referenced by
 `domains/reaction.md`'s mechanism and requirements, not a second copy of them.
 
+`LINES-DEC-001` (Kevin, 2026-09-21, VV-20): the words-only lines VV-18 left behind still leaned on
+written interjection strings to carry tone ("Ow! Ow ow ow!", "Zzz.", "Wha—", the "..." trail-offs)
+rather than actual sentences — Kevin: "the lines aren't very good themselves; they do too much 'um,
+ahh, ouhdfubv' for my liking; they don't need to in their lines, they can talk now." §3's 64 lines
+are rewritten as plain, natural, under-twelve-word spoken sentences with no written grunt, stammer,
+or interjection string standing in for a sound — the character lives in the words now, not in the
+spelling. The event list, the four-per-event count, and every line's `grunt` field are unchanged.
+
 ## 2. JSON shape (confirmed at the first ticket, `VV-3`; `grunt` added by `VV-18`)
 
 ```json
 // data/villager_voices/reaction/trade_completed.json
 {
   "lines": [
-    { "subtitle": "Traded! Nice.", "sound": "villager_voices:reaction.trade_completed.1", "grunt": "minecraft:entity.villager.trade" },
-    { "subtitle": "Good trade, that.", "sound": "villager_voices:reaction.trade_completed.2", "grunt": "minecraft:entity.villager.trade" },
-    { "subtitle": "Ha! Emeralds for me.", "sound": "villager_voices:reaction.trade_completed.3", "grunt": "minecraft:entity.villager.trade" },
-    { "subtitle": "Pleasure doing business.", "sound": "villager_voices:reaction.trade_completed.4", "grunt": "minecraft:entity.villager.trade" }
+    { "subtitle": "Good trade. Come back tomorrow.", "sound": "villager_voices:reaction.trade_completed.1", "grunt": "minecraft:entity.villager.trade" },
+    { "subtitle": "That was a fair deal for both of us.", "sound": "villager_voices:reaction.trade_completed.2", "grunt": "minecraft:entity.villager.trade" },
+    { "subtitle": "Emeralds. I could get used to this.", "sound": "villager_voices:reaction.trade_completed.3", "grunt": "minecraft:entity.villager.trade" },
+    { "subtitle": "Pleasure doing business with you.", "sound": "villager_voices:reaction.trade_completed.4", "grunt": "minecraft:entity.villager.trade" }
   ]
 }
 ```
@@ -43,38 +51,44 @@ optional (a line may omit it) and names a vanilla villager `SoundEvent` id, play
 delayed until it finishes (`domains/audio.md` `AUDIO-REQ-007`); it is never this mod's own namespace
 and never validated for existence by `common`'s codec, only by shape (`domains/audio.md` §3).
 `spoken` (VV-11 round six, `AUDIO-DEC-006` amendment) is also optional and, when present, is the
-text the voice pipeline's generator feeds the TTS engine instead of `subtitle` — for the rare line
-whose subtitle spelling isn't plainly pronounceable ("Zzz.") or contains a written interruption
-that reads as a truncated word rather than punctuation ("Wha—"). A line without one still gets help
-if it needs it: `tools/voices/render.py`'s own fallback normalizer handles a written interjection
-misspelling and a plain em-dash trail-off on its own (`domains/audio.md` §3 "Input"); `spoken` is
-only for what that normalizer can't fix. No loader reads it — display and playback only ever use
-`subtitle`/`sound`/`grunt`.
+text the voice pipeline's generator feeds the TTS engine instead of `subtitle` — for a line whose
+subtitle spelling isn't plainly pronounceable, or contains a written interruption that reads as a
+truncated word rather than punctuation. A line without one still gets help if it needs it:
+`tools/voices/render.py`'s own fallback normalizer handles a written interjection misspelling and a
+plain em-dash trail-off on its own (`domains/audio.md` §3 "Input"); `spoken` is only for what that
+normalizer can't fix. No loader reads it — display and playback only ever use `subtitle`/`sound`/
+`grunt`. The field itself stays in the codec (`common`'s `CatalogueCodecTest` still exercises
+parsing it), but `LINES-DEC-001`'s rewrite left no 1.0 line needing it: every one of the 64 lines
+is plain, pronounceable spoken English as written, so `spoken` is currently unused by the shipped
+catalogue — the two lines that once needed it (`sleep.3`, `killed.3`) were rewritten to not.
 
 ## 3. The sixteen catalogues
 
 Every 1.0 line's `grunt` is the same vanilla event across all four lines of its own event (VV-18's
 own choice, for a consistent voice per event rather than per line — nothing in `AUDIO-DEC-005`
-requires variation within an event).
+requires variation within an event). Rewritten to plain spoken sentences by `LINES-DEC-001`
+(VV-20): no written grunt, stammer, or interjection string stands in for a sound anywhere below,
+every line is under twelve words, and every line is plainly pronounceable as written — none of the
+64 needs the `spoken` override (§2).
 
-| Event | 1 | 2 | 3 | 4 | Grunt | Spoken (where it differs) |
-|---|---|---|---|---|---|---|
-| `trade_completed` | Traded! Nice. | Good trade, that. | Ha! Emeralds for me. | Pleasure doing business. | `entity.villager.trade` | |
-| `offer_opened` | Lookin' to trade? | Hmm, what've you got? | Ah, a customer. | Step right up. | `entity.villager.ambient` | |
-| `hurt` | Ow! Ow ow ow! | That hurt! | Watch it! | Ah! Rude! | `entity.villager.hurt` | |
-| `killed` | No—! | Unfair... | Wha— no! | Argh! | `entity.villager.death` | 3: What, no! |
-| `zombified` | Cold... | Something's wrong... | Hungry... | Can't... think... | `entity.villager.ambient` | |
-| `cured` | Warm again! | Hmm, that's better. | Ah, thank you! | Good as new. | `entity.villager.ambient` | |
-| `level_up` | Ha! Promoted! | Business is booming. | Moving up in the world. | Ah, a raise, of sorts. | `entity.villager.celebrate` | |
-| `restock` | Hmm, restocking. | More goods, fresh in. | Ah, business never sleeps. | Back to work. | `entity.villager.ambient` | |
-| `sleep` | Bed time. | Goodnight. | Zzz. | Ahh, rest at last. | `entity.villager.ambient` | 3: Shh. |
-| `wake` | Morning. | Hmm, another day. | Ah, well rested. | Let's get to it. | `entity.villager.ambient` | |
-| `raid_bell` | Raid! Raid! | Take cover! | Ah! Not again! | Everyone, hide! | `entity.villager.ambient` | |
-| `golem_summoned` | Ha! Reinforcements. | Good, backup. | Ah, our protector. | Feel safer now. | `entity.villager.celebrate` | |
-| `panic` | Ah! Ah! Run! | Danger! | Get away! | Ah, help! | `entity.villager.ambient` | |
-| `player_staring` | Can I help you? | Hmm, something the matter? | Ah, personal space, please. | Yes? | `entity.villager.ambient` | |
-| `breeding` | Hmm, ah, private moment. | Look away, please. | Ah— not now. | A bit of privacy? | `entity.villager.ambient` | |
-| `baby_grows` | Ha! Grown up already. | My, how time flies. | Ah, look at them now. | All grown up. | `entity.villager.ambient` | |
+| Event | 1 | 2 | 3 | 4 | Grunt |
+|---|---|---|---|---|---|
+| `trade_completed` | Good trade. Come back tomorrow. | That was a fair deal for both of us. | Emeralds. I could get used to this. | Pleasure doing business with you. | `entity.villager.trade` |
+| `offer_opened` | Looking to trade? | What have you got for me? | Ah, a customer. Come, look. | Step right up, friend. | `entity.villager.ambient` |
+| `hurt` | That hurt. | Stop that, it hurts. | Watch where you swing that. | That was uncalled for. | `entity.villager.hurt` |
+| `killed` | No, please, not like this. | This is not fair. | Wait, no! | I did not deserve this. | `entity.villager.death` |
+| `zombified` | Something is wrong with me. | I feel so cold. | I cannot stop this. | I can barely think straight. | `entity.villager.ambient` |
+| `cured` | I am warm again. | That is much better. | Thank you, truly. | Good as new, thanks to you. | `entity.villager.ambient` |
+| `level_up` | I have been promoted! | Business is booming these days. | I am moving up in the world. | Consider this my raise. | `entity.villager.celebrate` |
+| `restock` | Just restocking, one moment. | Fresh goods, right this way. | Business never really stops. | Back to work, I suppose. | `entity.villager.ambient` |
+| `sleep` | Time for bed. | Goodnight, then. | Quiet now, I am sleeping. | Rest at last. | `entity.villager.ambient` |
+| `wake` | Morning already. | Another day, I suppose. | Well rested, at least. | Let's get to it, then. | `entity.villager.ambient` |
+| `raid_bell` | A raid! Everyone, take cover! | Take cover, now! | Not this again. | Everyone, get inside! | `entity.villager.ambient` |
+| `golem_summoned` | Reinforcements, finally. | Good, we could use the backup. | Our protector is here. | I feel much safer now. | `entity.villager.celebrate` |
+| `panic` | Run, everyone, run! | Danger. Get inside. | Get away from here! | Somebody help, please! | `entity.villager.ambient` |
+| `player_staring` | Can I help you with something? | Is something the matter? | A little personal space, please. | Yes? Can I do something for you? | `entity.villager.ambient` |
+| `breeding` | This is a private moment. | Please, look away. | Not now, please. | A little privacy, if you would. | `entity.villager.ambient` |
+| `baby_grows` | Already grown up. | My, how the time flies. | Look at them now. | All grown up, just like that. | `entity.villager.ambient` |
 
 16 events × 4 lines = **64 lines total** at 1.0, one registered `SoundEvent` each
 (`domains/audio.md` `AUDIO-REQ-001`). Every `grunt` in this table is a vanilla `minecraft:` id, listed
@@ -82,13 +96,11 @@ above with the shared `entity.villager.` prefix omitted for width; none of the s
 uses a profession-specific `work_<profession>` grunt (`domains/audio.md` §3's category rule allows
 it, but no 1.0 line's text is profession-specific enough to call for one).
 
-"Spoken (where it differs)" (VV-11 round six) lists only the two lines that needed an explicit
-catalogue `spoken` field: `sleep.3` ("Zzz." isn't pronounceable as written) and `killed.3` ("Wha—"
-is a genuinely truncated word fragment, not just punctuation the generator's own fallback normalizer
-can fix). A blank cell does **not** mean every other line's subtitle is spoken byte-for-byte
-verbatim — `killed.1` ("No—!") and `breeding.3` ("Ah— not now.") both carry a written interruption
-dash that the generator's fallback normalizer turns into a pause or drops on its own, with no
-catalogue field needed (`domains/audio.md` §3 "Input").
+The prior wording (VV-18-era, superseded by `LINES-DEC-001`) leaned on written interjections and
+trail-offs to carry tone — "Ow! Ow ow ow!" for `hurt.1`, "Zzz." for `sleep.3`, "Wha— no!" for
+`killed.3`, "..." trail-offs across `zombified` — two of which needed an explicit catalogue
+`spoken` override to be pronounceable at all. The rewrite above says the same reactions in actual
+sentences instead, so no line in the current catalogue needs that override any more (§2).
 
 ## 4. Use cases
 
@@ -104,8 +116,9 @@ catalogue field needed (`domains/audio.md` §3 "Input").
 
 ## 6. Open questions
 
-None. The 64 lines are this sheet's own data, written now rather than deferred. The codec's field
-names, the one mechanical thing left open, are confirmed by `VV-3`: a top-level JSON object with a
+None. The 64 lines are this sheet's own data, written now rather than deferred, rewritten once
+already (`LINES-DEC-001`, §1/§3) to plain spoken sentences. The codec's field names, the one
+mechanical thing left open, are confirmed by `VV-3`: a top-level JSON object with a
 `"lines"` array, each entry an object with a `"subtitle"` string and a `"sound"` string, exactly as
 §2 already showed — no wrapper or renaming needed, since that shape already matched the data as
 written. Parsing, validation (`LINES-REQ-003`'s id pattern, `REACTION-REQ-012`'s unregistered-sound
